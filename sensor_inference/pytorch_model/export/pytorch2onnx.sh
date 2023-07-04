@@ -1,0 +1,3 @@
+python sensor_inference/pytorch_model/export/lidar_pytorch2onnx.py --ckpt /root/OpenPCDet/output/misc_models/lidar_detection_large/default/ckpt/checkpoint_epoch_50.pth --cfg_file sensor_inference/cfgs/detection_lidar.yaml
+
+python sensor_inference/pytorch_model/export/image_pytorch2onnx.py --ckpt /root/exchange/wangliang/lp-01-model/image.pth --data_path sensor_inference/pytorch_model/export/test_image.png

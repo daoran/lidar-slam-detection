@@ -2,8 +2,10 @@ from functools import partial
 
 import numpy as np
 
-from sensor_inference.utils import common_utils
-
+def mask_points_by_range(points, limit_range):
+    mask = (points[:, 0] >= limit_range[0]) & (points[:, 0] <= limit_range[3]) \
+           & (points[:, 1] >= limit_range[1]) & (points[:, 1] <= limit_range[4])
+    return mask
 
 class DataProcessor(object):
     def __init__(self, processor_configs, point_cloud_range, training, realtime=False):
@@ -28,7 +30,7 @@ class DataProcessor(object):
             return partial(self.mask_points_and_boxes_outside_range, config=config)
         if self.realtime:
             return points, data_dict
-        mask = common_utils.mask_points_by_range(points, self.point_cloud_range)
+        mask = mask_points_by_range(points, self.point_cloud_range)
         points = points[mask]
         return points, data_dict
 

@@ -3,7 +3,7 @@ project(slam_wrapper)
 
 find_package(CUDA)
 if(CUDA_FOUND)
-    add_definitions(-DHAS_CUDA_ENABLE)
+    add_definitions(-DHAVE_CUDA_ENABLE)
 else()
     set(CUDA_INCLUDE_DIRS "")
     set(CUDA_LIBRARIES "")

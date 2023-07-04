@@ -1,6 +1,6 @@
 import numpy as np
 import sensor_driver.common_lib.cpp_utils as util
-import sensor_driver.common_lib.iou3d_nms as iou3d_nms_utils
+import sensor_driver.inference.iou3d_nms as iou3d_nms_utils
 from sensor_fusion.AB3DMOT.kalman_filter import KalmanBoxTracker, KalmanStaticBoxTracker
 
 def associate_detections_to_trackers(detections, trackers, method, threshold):

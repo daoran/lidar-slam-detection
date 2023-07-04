@@ -1,6 +1,6 @@
-from hardware.platform_common import BOARD_NAME, is_jetson
+from hardware.platform_common import MACHINE
 
-if is_jetson():
+if MACHINE == "aarch64":
     from .aarch64 import *
-elif BOARD_NAME == "IPC":
+elif MACHINE == "x86_64":
     from .x86_64 import *

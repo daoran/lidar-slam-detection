@@ -6,7 +6,7 @@ MACHINE=`uname -m`
 if [ ! -f "/usr/local/lib/libzcm.so" ]; then
     echo "Install ZeroZCM..."
     cd tools/build/resources/ZeroCM
-    ./waf configure --use-ipc --use-zmq --use-elf
+    ./waf configure --use-ipc --use-zmq --use-elf --libdir=/usr/local/lib
     ./waf build
     ./waf install
 

@@ -1,12 +1,9 @@
 board:
     inference_engine:
-        lidar_cfg_file: sensor_inference/cfgs/detection_lidar_large.yaml
+        lidar_cfg_file: sensor_inference/cfgs/detection_lidar.yaml
         image_cfg_file: sensor_inference/cfgs/detection_image.yaml
         # deactive_lidar: true
         deactive_image: true
-
-    fusion:
-        source: ['camera']
 
 pipeline: [['Source', 'SLAM', 'Sink']]
 
@@ -44,30 +41,30 @@ lidar:
           exclude: [-0.5, -0.5, 0, 0.5, 0.5, 0],
       }
 
-camera:
-    - {
-          name: "0",  # "http://$IP:$topic", "rtsp://$URI"
-          intrinsic_parameters: [600, 600, 240, 320, 0, 0, 0, 0], # fx, fy, cx, cy, k1, k2, p1, p2
-          extrinsic_parameters: [0, 0, 0, -90, 0, 90],
-          undistortion: false,
-          flip_method: 0,
-          fisheye: false,
-          stream: {
-            sink: "none",        # [none, udp, rtsp]
-            host: 192.168.1.101,
-            port: 8554,
-            bitrate: 1000000,    # 1Mbps
-            enable_audio: false,
-            audio_name: "Y02",
-          },
-        #   crop: [0, 0, 0, 0],     # top, bottom, left, right
-        #   input_width: 1920,   #optional
-        #   input_height: 1080,  #optional
-        #   format: "UYVY",      #optional
-        #   output_width: 640,   #optional, default is 640
-        #   output_height: 480,  #optional, default is 480
-        #   custom_cap: '',      #optional, gstreamer pipeline
-      }
+camera: []
+    # - {
+    #       name: "0",  # "http://$IP:$topic", "rtsp://$URI"
+    #       intrinsic_parameters: [600, 600, 240, 320, 0, 0, 0, 0], # fx, fy, cx, cy, k1, k2, p1, p2
+    #       extrinsic_parameters: [0, 0, 0, -90, 0, 90],
+    #       undistortion: false,
+    #       flip_method: 0,
+    #       fisheye: false,
+    #       stream: {
+    #         sink: "none",        # [none, udp, rtsp]
+    #         host: 192.168.1.101,
+    #         port: 8554,
+    #         bitrate: 1000000,    # 1Mbps
+    #         enable_audio: false,
+    #         audio_name: "Y02",
+    #       },
+    #       crop: [0, 0, 0, 0],    # top, bottom, left, right
+    #       input_width: 1920,     #optional
+    #       input_height: 1080,    #optional
+    #       format: "UYVY",        #optional
+    #       output_width: 640,     #optional, default is 640
+    #       output_height: 480,    #optional, default is 480
+    #       custom_cap: '',        #optional, gstreamer pipeline
+    #   }
 
 radar: []
 
@@ -212,12 +209,10 @@ input:
 output:
     point_cloud:
         use: false
-
         destination: 192.168.1.101
 
     object:
         use: true
-
         vehicle: true
         pedestrian: true
         cyclist: true
@@ -225,7 +220,6 @@ output:
 
     freespace:
         use: true
-
         resolution: 0.25
         min_height: 0.2
         max_height: 2.5
@@ -234,21 +228,18 @@ output:
     protocol:
         UDP:
             use: true
-
             destination: 192.168.1.101
             port: 9000
             coordinate: "local" # global
             anchor: [0, 0]
         CAN:
             use: false
-
             device: "can0"
             baud: 500000
 
     localization:
         UDP:
             use: false
-
             destination: 192.168.1.101
             port: 9001
 
@@ -261,5 +252,5 @@ system:
         mode: "normal" # loop
         loop_duration: 600
         exclude_keys: ["freespace"]
-        journal: false
+        journal: true
         auto_start: false

@@ -1,20 +1,24 @@
 import time
 from multiprocessing import Process, Queue, Value
-from util.common_util import clear_queue
-from hardware.platform_common import is_jetson
 import sensor_driver.common_lib.cpp_utils as util
 
+def clear_queue(q):
+    while not q.empty():
+        try:
+            q.get(False)
+        except Exception as e:
+            continue
+
 class InferBase():
-    def __init__(self, name, engine_start, cfg_file, serialize_engine, logger, max_size):
-        self.name = name
-        self.engine_start = engine_start
-        self.cfg_file = cfg_file
-        self.is_prepared = Value('b', False)
-        self.is_stopped = Value('b', True)
-        self.process_run = Value('b', False)
-        self.serialize_engine = serialize_engine
-        self.max_size = max_size
-        self.logger = logger
+    def __init__(self, name, engine_start, cfg_file, logger, max_size):
+        self.name          = name
+        self.engine_start  = engine_start
+        self.cfg_file      = cfg_file
+        self.is_prepared   = Value('b', False)
+        self.is_stopped    = Value('b', True)
+        self.process_run   = Value('b', False)
+        self.max_size      = max_size
+        self.logger        = logger
 
     def initialize(self):
         raise NotImplementedError
@@ -31,10 +35,6 @@ class InferBase():
     def prepare(self, calib = None):
         if self.is_prepared.value:
             return
-        if is_jetson():
-            from pycuda import driver
-            driver.init()
-            self.ctx = driver.Device(0).make_context()
         self.build_engine(calib)
         self.is_prepared.value = True
 
@@ -58,14 +58,6 @@ class InferBase():
             time.sleep(1e-2)
         clear_queue(self.input_queue)
         self.logger.info('%s engine stopped' % (self.name))
-
-    def __del__(self):
-        self.stop()
-        if self.process_run.value:
-            self.process_run.value = False
-            self.thread.join(0.1)
-            if self.thread.is_alive():
-                self.thread.terminate()
 
     def is_overload(self):
         return (self.input_queue.full() or not self.is_prepared_done())

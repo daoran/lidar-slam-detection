@@ -1,23 +1,23 @@
-from multiprocessing import Queue, Value
 import queue
+from multiprocessing import Queue, Value
 from sensor_inference.lidar_infer import LidarInfer
 from sensor_inference.image_infer import ImageInfer
 
 class DetInfer():
     def __init__(self, lidar_cfg_file = None, image_cfg_file = None,
                  deactive_lidar = False, deactive_image = False,
-                 serialize_engine = False, logger = None, max_size = 3):
+                 logger = None, max_size = 3):
         self.engine_start = Value('b', False)
         self.max_size = max_size
         self.logger = logger
         if not deactive_lidar:
-            self.lidar_engine = LidarInfer(self.engine_start, lidar_cfg_file, serialize_engine, logger, max_size)
+            self.lidar_engine = LidarInfer(self.engine_start, lidar_cfg_file, logger, max_size)
         else:
             self.lidar_engine = None
             self.logger.warn('lidar object detection is deactived')
 
         if not deactive_image:
-            self.image_engine = ImageInfer(self.engine_start, image_cfg_file, serialize_engine, logger, max_size)
+            self.image_engine = ImageInfer(self.engine_start, image_cfg_file, logger, max_size)
         else:
             self.image_engine = None
             self.logger.warn('image object detection is deactived')
@@ -35,12 +35,6 @@ class DetInfer():
             self.lidar_engine.set_output(self.objects_queue)
         if self.image_engine is not None:
             self.image_engine.set_output(self.objects_queue)
-
-    def prepare_lidar(self, calib=None):
-        self.lidar_engine.prepare(calib)
-
-    def prepare_image(self, calib=None):
-        self.image_engine.prepare(calib)
 
     def is_prepared_done(self):
         lidar_engine_prepared = self.lidar_engine.is_prepared_done() if self.lidar_engine is not None else True
@@ -78,8 +72,11 @@ class DetInfer():
 
         input_dict = data_dict.copy()
         # pop out unused data
-        input_dict.pop('radar', None)
+        input_dict.pop('points_attr', None)
         input_dict.pop('image_jpeg', None)
+        input_dict.pop('radar', None)
+        input_dict.pop('ins_data', None)
+        input_dict.pop('imu_data', None)
 
         input_dict['lidar_valid'] = input_dict['lidar_valid'] if self.lidar_engine is not None else False
         input_dict['image_valid'] = input_dict['image_valid'] if self.image_engine is not None else False

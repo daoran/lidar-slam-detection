@@ -13,17 +13,10 @@ link_directories(/usr/local/lib)
 
 find_package(CUDA)
 if(CUDA_FOUND)
-    add_definitions(-DHAS_CUDA_ENABLE)
+    add_definitions(-DHAVE_CUDA_ENABLE)
 else()
     set(CUDA_INCLUDE_DIRS "")
     set(CUDA_LIBRARIES "")
-endif()
-
-if( ${ARCHITECTURE} STREQUAL "x86_64")
-    add_definitions(-DPLATFORM_X86_64)
-else()
-    add_definitions(-DPLATFORM_AARCH64)
-    set(CUDA_FILTER_LIB ${PROJECT_SOURCE_DIR}/common_lib/cpp_utils/cuda-pcl/libcudafilter.so)
 endif()
 
 find_package(Eigen3 REQUIRED)
@@ -35,11 +28,8 @@ include_directories(
     SYSTEM ${CUDA_INCLUDE_DIRS}
 )
 
-add_subdirectory(common_lib/logging)
-add_subdirectory(common_lib/network_driver)
-add_subdirectory(common_lib/cpp_utils)
-add_subdirectory(common_lib/iou3d_nms)
-add_subdirectory(point2voxel/voxelize)
+add_subdirectory(common_lib)
+add_subdirectory(inference)
 add_subdirectory(lidar_driver)
 add_subdirectory(ins_driver)
 add_subdirectory(radar_driver)
@@ -70,25 +60,24 @@ target_link_libraries(radar_driver_ext
     radar_driver
 )
 
-pybind11_add_module(point2voxel_ext point2voxel/point2voxel.h point2voxel/all.cpp)
-set_target_properties(point2voxel_ext PROPERTIES PREFIX "")
-set_target_properties(point2voxel_ext PROPERTIES SUFFIX ".so")
-target_link_libraries(point2voxel_ext
-    PRIVATE ${PYTHON_LIBARIES}
-    voxelization
-)
-
 pybind11_add_module(cpp_utils_ext common_lib/cpp_utils/cpp_utils.h common_lib/cpp_utils/all.cpp)
 set_target_properties(cpp_utils_ext PROPERTIES PREFIX "")
 set_target_properties(cpp_utils_ext PROPERTIES SUFFIX ".so")
 target_link_libraries(cpp_utils_ext
     PRIVATE ${PYTHON_LIBARIES}
     ${CUDA_LIBRARIES}
-    ${CUDA_FILTER_LIB}
     cpp_utils
 )
 
-pybind11_add_module(iou3d_nms_ext common_lib/iou3d_nms/iou3d_nms_api.h common_lib/iou3d_nms/iou3d_nms_api.cpp)
+pybind11_add_module(inference_ext inference/inference.h inference/all.cpp)
+set_target_properties(inference_ext PROPERTIES PREFIX "")
+set_target_properties(inference_ext PROPERTIES SUFFIX ".so")
+target_link_libraries(inference_ext
+    PRIVATE ${PYTHON_LIBARIES}
+    inference
+)
+
+pybind11_add_module(iou3d_nms_ext inference/iou3d_nms/iou3d_nms_api.h inference/iou3d_nms/iou3d_nms_api.cpp)
 set_target_properties(iou3d_nms_ext PROPERTIES PREFIX "")
 set_target_properties(iou3d_nms_ext PROPERTIES SUFFIX ".so")
 target_link_libraries(iou3d_nms_ext

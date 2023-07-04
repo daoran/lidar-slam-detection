@@ -1,4 +1,5 @@
 import tensorrt as trt
+from pycuda import driver
 from ..tensorrt_engine import Engine
 
 TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
@@ -14,6 +15,8 @@ def cudaSetDevice(device_idx):
 
 class RuntimeBackend:
     def __init__(self, trt_path):
+        driver.init()
+        self.ctx = driver.Device(0).make_context()
         cudaSetDevice(0)
         print('Reading engine from trt model {}'.format(trt_path))
         if not trt.init_libnvinfer_plugins(TRT_LOGGER, ""):

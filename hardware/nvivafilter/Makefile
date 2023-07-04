@@ -111,9 +111,8 @@ LIBRARIES += -L$(TEGRA_LIB_DIR) -lcuda -lrt
 ################################################################################
 
 # CUDA code generation flags
-GENCODE_SM72    := -gencode arch=compute_72,code=compute_72  # for Xavier
 GENCODE_SM87    := -gencode arch=compute_87,code=compute_87  # for Orin
-GENCODE_FLAGS   ?= $(GENCODE_SM72) $(GENCODE_SM87)
+GENCODE_FLAGS   ?= $(GENCODE_SM87)
 
 # Target rules
 all: build

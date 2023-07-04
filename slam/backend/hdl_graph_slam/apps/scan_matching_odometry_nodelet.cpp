@@ -118,7 +118,7 @@ public:
     pingpong_idx = 0;
     last_pingpong_idx = 1;
     for (int i = 0; i < 2; i++) {
-#ifdef HAS_CUDA_ENABLE
+#ifdef HAVE_CUDA_ENABLE
       registrations[i] = select_registration_method("FAST_VGICP_CUDA");
 #else
       registrations[i] = select_registration_method("FAST_GICP");

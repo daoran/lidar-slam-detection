@@ -45,7 +45,7 @@ public:
     last_pingpong_idx = 1;
     for (int i = 0; i < 2; i++) {
       if (registration[i] == nullptr) {
-#ifdef HAS_CUDA_ENABLE
+#ifdef HAVE_CUDA_ENABLE
         registration[i] = select_registration_method("NDT_CUDA", 100000);
 #else
         registration[i] = select_registration_method("FAST_VGICP", 100000);

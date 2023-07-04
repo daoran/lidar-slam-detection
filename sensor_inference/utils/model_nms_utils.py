@@ -1,6 +1,5 @@
 import numpy as np
-from hardware.platform_common import is_jetson
-import sensor_driver.common_lib.iou3d_nms as iou3d_nms_utils
+import sensor_driver.inference.iou3d_nms as iou3d_nms_utils
 
 def class_agnostic_nms_lidar(box_scores, box_preds, box_labels, nms_config, score_thresh=None):
     for cls_idx, score in score_thresh.items():
@@ -13,8 +12,7 @@ def class_agnostic_nms_lidar(box_scores, box_preds, box_labels, nms_config, scor
 
     selected = []
     if box_scores.shape[0] > 0:
-        nms_type = nms_config.NMS_TYPE if is_jetson() else "nms_cpu"
-        keep_idx, selected_scores = getattr(iou3d_nms_utils, nms_type)(
+        keep_idx, selected_scores = getattr(iou3d_nms_utils, nms_config.NMS_TYPE)(
                 box_preds, box_scores, nms_config.NMS_THRESH
         )
         selected = keep_idx[:nms_config.NMS_POST_MAXSIZE]

@@ -15,7 +15,7 @@ CalibLidarImu::CalibLidarImu()
     downer_.setLeafSize(0.1, 0.1, 0.1);
 
 // init register object
-#ifdef HAS_CUDA_ENABLE
+#ifdef HAVE_CUDA_ENABLE
         register_ = select_registration_method("FAST_VGICP_CUDA");
 #else
         register_ = select_registration_method("FAST_VGICP");

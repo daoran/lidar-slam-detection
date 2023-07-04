@@ -7,13 +7,6 @@ import queue
 from pathlib import Path
 from threading import Thread
 
-def clear_queue(q):
-    while not q.empty():
-        try:
-            q.get(False)
-        except Exception as e:
-            continue
-
 def run_cmd(cmd):
     return os.system('%s' % (cmd))
 

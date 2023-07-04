@@ -8,7 +8,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-from hardware.platform_common import BOARD_NAME
+from hardware.platform_common import BOARD_NAME, MACHINE
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -41,9 +41,7 @@ class CMakeBuild(build_ext):
 
         cmake_args += ['-Wno-dev', '-DCMAKE_BUILD_TYPE=' + cfg, '-DBOARD_NAME=' + BOARD_NAME]
 
-        if BOARD_NAME in ["Xavier-NX", "Xavier-AGX"]:
-            build_thread = 4
-        elif BOARD_NAME in ["AGX-Orin-32GB", "IPC"]:
+        if BOARD_NAME in ["AGX-Orin-32GB"]:
             build_thread = 8
         else:
             build_thread = 4
@@ -63,12 +61,20 @@ class CMakeBuild(build_ext):
 setup(
     name='perception',
     version='1.0.0',
+<<<<<<< HEAD
     author='LiangWang',
     author_email='15lwang@alumni.tongji.edu.cn',
     description='LiDAR SLAM & Detection',
     long_description='',
     ext_modules=[CMakeExtension('perception')],
-    data_files=[('lib/', ['sensor_driver/common_lib/cpp_utils/cuda-pcl/libcudafilter.so'])],
+=======
+    author='TSARI-Perception',
+    author_email='wliang@tsari.tsinghua.edu.cn',
+    description='TSARI Perception',
+    long_description='',
+    ext_modules=[CMakeExtension('perception')],
+    data_files=[('lib/', [f'sensor_driver/inference/libspconv/lib/{MACHINE}/libspconv.so'])],
+>>>>>>> gitlab/master
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )

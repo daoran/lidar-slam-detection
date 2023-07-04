@@ -8,9 +8,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <pcl/filters/voxel_grid.h>
-#ifdef HAS_CUDA_ENABLE
+#ifdef HAVE_CUDA_ENABLE
 #include "cuda_runtime.h"
-#include "cuda-pcl/cudaFilter.h"
 #endif
 
 #include "Transform.h"
@@ -183,79 +182,9 @@ py::array_t<float> pointcloud_downsample_pcl(py::array_t<float> &points, float v
     return py::array_t<float>(py::array::ShapeContainer({(long) f.size() / 4, 4}), f.data());
 }
 
-#ifdef PLATFORM_AARCH64
-#ifdef HAS_CUDA_ENABLE
-
-#define MAX_POINTS_NUM 1000000
-typedef struct {
-    bool is_init = false;
-    cudaStream_t stream;
-    cudaFilter* filter;
-    float voxel_size = 0;
-    float* input;
-    float* output;
-} FilterData_t;
-static FilterData_t filter_data;
-
-void set_filter_param(float voxel_size) {
-    if (fabs(filter_data.voxel_size - voxel_size) > 1e-3) {
-        filter_data.voxel_size = voxel_size;
-        FilterParam_t config;
-        config.type = VOXELGRID;
-        config.voxelX = voxel_size;
-        config.voxelY = voxel_size;
-        config.voxelZ = voxel_size;
-        filter_data.filter->set(config);
-        cudaStreamSynchronize(filter_data.stream);
-    }
-}
-
-void init_downsample_filter(float voxel_size) {
-    if (!filter_data.is_init) {
-        filter_data.is_init = true;
-        cudaStreamCreate (&filter_data.stream);
-        filter_data.filter = new cudaFilter(filter_data.stream);
-        set_filter_param(0.5);
-        cudaMallocManaged(&filter_data.input, sizeof(float) * 4 * MAX_POINTS_NUM, cudaMemAttachHost);
-        cudaStreamAttachMemAsync (filter_data.stream, filter_data.input);
-
-        cudaMallocManaged(&filter_data.output, sizeof(float) * 4 * MAX_POINTS_NUM, cudaMemAttachHost);
-        cudaStreamAttachMemAsync (filter_data.stream, filter_data.output);
-        cudaStreamSynchronize(filter_data.stream);
-    } else {
-        set_filter_param(voxel_size);
-    }
-}
-
-py::array_t<float> pointcloud_downsample(py::array_t<float> &points, float voxel_size) {
-    if (voxel_size <= 0.2) {
-        return pointcloud_downsample_pcl(points, voxel_size);
-    }
-
-    unsigned int points_num = points.unchecked<2>().shape(0);
-    init_downsample_filter(voxel_size);
-    if (points_num <= 0) {
-        return py::array_t<float>(py::array::ShapeContainer({0, 4}));
-    }
-    // copy point to GPU
-    cudaMemcpyAsync(filter_data.input, points.data(), points.nbytes(), cudaMemcpyHostToDevice, filter_data.stream);
-    // voxel grid filter
-    unsigned int downsample_num = 0;
-    int status = filter_data.filter->filter(filter_data.output, &downsample_num, filter_data.input, points_num);
-    cudaStreamSynchronize(filter_data.stream);
-    if (downsample_num <= 0) {
-        return py::array_t<float>(py::array::ShapeContainer({0, 4}));
-    }
-    return py::array_t<float>(py::array::ShapeContainer({(long) downsample_num, 4}), filter_data.output);
-}
-#endif // HAS_CUDA_ENABLE
-#else
-
 py::array_t<float> pointcloud_downsample(py::array_t<float> &points, float voxel_size) {
     return pointcloud_downsample_pcl(points, voxel_size);
 }
-
-#endif // PLATFORM_AARCH64
 
 void get_distance_matrix(const py::array_t<float> &det,
                          const py::array_t<float> &trk,

@@ -2,7 +2,7 @@ import numpy as np
 import copy
 
 import sensor_driver.common_lib.cpp_utils as util
-import sensor_driver.common_lib.iou3d_nms as iou3d_nms_utils
+import sensor_driver.inference.iou3d_nms as iou3d_nms_utils
 from module.detect.detect_template import DetectTemplate
 from util.box_utils import boxes3d_lidar_to_camera, boxes3d_to_corners3d_camera, corners3d_to_img_boxes, lidar_to_img
 
@@ -92,22 +92,14 @@ class Fusion(DetectTemplate):
     Lidar_Weight = 0.5
     Image_Weight = 0.5
     IOU_Gain = 0.2
-    def __init__(self, cfg, logger = None):
+    def __init__(self, logger = None):
         super().__init__(name = 'fusion', logger = logger)
-        self.cfg = cfg
         self.logger = logger
         self.lidar_data = []
         self.image_data = []
 
     def do_fusion(self, lidar_data, image_data):
-        result = lidar_data
-        if len(self.cfg['source']) == 0:
-            return result
-
-        if 'camera' in self.cfg['source']:
-            result = self.fusion_camera(result, image_data)
-
-        return result
+        return self.fusion_camera(lidar_data, image_data)
 
     def fusion_camera(self, result, image_data):
         lidar_pred_boxes = result['pred_boxes']

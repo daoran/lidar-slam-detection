@@ -5,6 +5,7 @@ from threading import Thread, Event
 import cv2
 import numpy as np
 
+from hardware.platform_common import is_jetson
 from .data_manager_template import DataManagerTemplate
 import hardware.gstreamer as driver
 from sensor_driver.common_lib import cpp_utils
@@ -14,6 +15,8 @@ from ..export_interface import register_interface
 
 # workaround for nvv4l2camerasrc (wrong stream data when system bootup)
 def warmup_camera(logger, camera):
+    if not is_jetson():
+        return
     global_flag = '/tmp/warmup_camera_' + camera
     if os.path.exists(global_flag):
         return

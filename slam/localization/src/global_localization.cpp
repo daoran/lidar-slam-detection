@@ -14,7 +14,7 @@ GlobalLocalization::GlobalLocalization(InitParameter &param, std::string cameraN
     mInitialized = false;
     mLastFrame = PointCloud::Ptr(new PointCloud());
     if (mRegistration == nullptr) {
-#ifdef HAS_CUDA_ENABLE
+#ifdef HAVE_CUDA_ENABLE
         mRegistration = select_registration_method("FAST_VGICP_CUDA");
 #else
         mRegistration = select_registration_method("FAST_VGICP");

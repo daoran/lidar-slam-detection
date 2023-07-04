@@ -1,11 +1,9 @@
-from hardware.platform_common import BOARD_NAME, is_jetson
+from hardware.platform_common import is_jetson
 
 if is_jetson():
     from .jetson.driver import *
-elif BOARD_NAME == "IPC":
-    from .x86_64.driver import *
 else:
-    pass
+    from .base.driver import *
 
 def get_flip(method):
     return get_flip_impl(method)

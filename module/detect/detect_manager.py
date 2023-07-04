@@ -20,7 +20,7 @@ class DetectManager(ManagerTemplate):
         self.cfg = cfg
         self.engine.start()
 
-        self.fusing = Fusion(cfg["board"]["fusion"], self.logger)
+        self.fusing = Fusion(self.logger)
         self.fusing.setup_tunnel(self.engine)
         self.fusing.init()
 

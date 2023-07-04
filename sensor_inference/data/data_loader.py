@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 from polygraphy.json import save_json
 from sensor_inference.utils.config import cfg, cfg_from_yaml_file
-from sensor_inference.dataset.demo_dataset import RealtimeDataset
+from sensor_inference.dataset.dataset import RealtimeDataset
 
 def parse_config(cfg_file):
     cfg_from_yaml_file(cfg_file, cfg)
