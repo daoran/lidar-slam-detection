@@ -35,6 +35,7 @@ class InferBase():
     def prepare(self, calib = None):
         if self.is_prepared.value:
             return
+
         self.build_engine(calib)
         self.is_prepared.value = True
 

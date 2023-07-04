@@ -89,43 +89,11 @@ class ConfigManager():
         self.dump_config(self.config_path)
         self.dump_config('/home/znqc/work/cfg/board_cfg_all.yaml')
 
-<<<<<<< HEAD
-=======
-        # get the modified network config interface
-        init_interface = ""
-        network_num = min(len(old_cfg.board.network), len(config.board.network))
-        for idx in range(network_num):
-            if old_cfg.board.network[idx] != config.board.network[idx]:
-                init_interface = init_interface + str(idx) + " "
-                self.logger.info('network interface: %d need to be re-init' % (idx))
-
-        if init_interface != "":
-            with open('/tmp/init_interface', 'w') as f:
-                f.write(init_interface)
-                os.fsync(f)
-
-        # find the current access network card
-        new_hostname = config.board.network[0].IP
-        for idx, net in enumerate(old_cfg.board.network):
-            if net.DHCP:
-                network = get_network('eth' + str(idx), gw = False)
-                ip_addr = net.IP if network is None else network[0]
-            else:
-                ip_addr = net.IP
-            if hostname == ip_addr:
-                new_hostname = hostname if (net.DHCP and config.board.network[idx].DHCP) else config.board.network[idx].IP
-                break
-
->>>>>>> gitlab/master
         if restart_service and (old_cfg.board != config.board or old_cfg.pipeline != config.pipeline):
             self.timed_task = Thread(target=self.timed_restart, daemon=True)
             self.timed_task.start()
 
-<<<<<<< HEAD
         return "localhost"
-=======
-        return new_hostname
->>>>>>> gitlab/master
 
     def dump_config(self, path, sync=True):
         _d = json.loads(json.dumps(self.config))

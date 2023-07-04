@@ -61,20 +61,12 @@ class CMakeBuild(build_ext):
 setup(
     name='perception',
     version='1.0.0',
-<<<<<<< HEAD
     author='LiangWang',
     author_email='15lwang@alumni.tongji.edu.cn',
     description='LiDAR SLAM & Detection',
     long_description='',
     ext_modules=[CMakeExtension('perception')],
-=======
-    author='TSARI-Perception',
-    author_email='wliang@tsari.tsinghua.edu.cn',
-    description='TSARI Perception',
-    long_description='',
-    ext_modules=[CMakeExtension('perception')],
     data_files=[('lib/', [f'sensor_driver/inference/libspconv/lib/{MACHINE}/libspconv.so'])],
->>>>>>> gitlab/master
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )
