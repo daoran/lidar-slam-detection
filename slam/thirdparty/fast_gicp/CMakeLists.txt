@@ -55,6 +55,9 @@ target_include_directories(fast_gicp PUBLIC
 
 ### CUDA ###
 if(${BUILD_VGICP_CUDA} STREQUAL "ON")
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_72,code=sm_72")
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_80,code=sm_80")
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_86,code=sm_86")
   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_87,code=sm_87")
 
   set(CUDA_NVCC_FLAGS "--expt-relaxed-constexpr ${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")

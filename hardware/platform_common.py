@@ -12,6 +12,7 @@ def get_board():
             dts = f.read()
         if 'p3701' in dts:
             return "AGX-Orin-32GB"
+        raise Exception("Invalid nvidia board")
     except Exception as e:
         machine = get_machine()
         return machine
