@@ -1,6 +1,8 @@
-from hardware.platform_common import JETPACK
 
-if JETPACK == "5.0.2":
-    from .TensorRT8_4 import runtime_engine
+try:
+    import tensorrt
+    from .TensorRT8 import runtime_engine
+except Exception as e:
+    raise Exception("Runtime backend is unavailable")
 
 RuntimeBackend = runtime_engine.RuntimeBackend
