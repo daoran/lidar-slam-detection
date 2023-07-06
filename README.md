@@ -34,7 +34,7 @@ LSD currently supports many features:
 
 # Prerequisites
 
-LSD can be worked both on x86 PC and Nvidia embedded boards (Xavier-NX, Xavier-AGX and Orin).
+LSD can be worked both on x86 PC(with GPU, **SM 80+**) and nvidia Orin.
 
 ### Basic Enviroment
 
@@ -46,18 +46,19 @@ nvidia-docker2 is needed to install firstly [Installation](docs/docker.md).
 
 A x86_64 docker image is provided to test.
 ```bash
-sudo docker pull 15liangwang/auto-ipu
-sudo docker run -it -d --net=host --privileged --shm-size=4g --name="LSD" -v /media:/root/exchange 15liangwang/auto-ipu
+sudo docker pull 15liangwang/lsd-cuda
+sudo docker run --gpus all -it -d --net=host --privileged --shm-size=4g --name="LSD" -v /media:/root/exchange 15liangwang/lsd-cuda
 sudo docker exec -it LSD /bin/bash
 ```
 
 Clone this repository and build the source code
 ```bash
 cd /home/znqc/work/
-git clone https://github.com/w111liang222/lidar-slam-detection.git
+git clone https://github.com/w111liang222/lidar-slam-detection.git -b v2.0
 cd lidar-slam-detection/
 unzip slam/data/ORBvoc.zip -d slam/data/
 python setup.py install
+bash sensor_inference/pytorch_model/export/generate_trt.sh
 ```
 
 Run LSD
