@@ -28,7 +28,7 @@ class InsDriver {
   void startPackageTransfer(std::string dest);
   void stopPackageTransfer();
   void setExternalParameter(Transform& trans);
-  bool trigger(uint64_t timestamp, std::vector<double> &motionT,
+  bool trigger(uint64_t timestamp, bool &motion_valid, std::vector<double> &motionT,
                double &motionR, InsDataType &ins, std::vector<InsDataType> &imu);
   Transform getInterplatedPosition(uint64_t t);
   void getMotion(std::vector<double> &motionT, double &motionR, uint64_t t0, uint64_t t1);

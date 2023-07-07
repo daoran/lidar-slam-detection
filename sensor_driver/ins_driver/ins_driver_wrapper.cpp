@@ -130,10 +130,11 @@ py::dict trigger(uint64_t timestamp) {
   double motionR = 0; // Yaw
   InsDataType gps;
   std::vector<InsDataType> imu;
-  bool valid = false;
+  bool ins_valid = false;
+  bool motion_valid = false;
 
   if (ins != nullptr) {
-    valid = ins->trigger(timestamp, motionT, motionR, gps, imu);
+    ins_valid = ins->trigger(timestamp, motion_valid, motionT, motionR, gps, imu);
   } else {
     LOG_ERROR("INS is not opened");
   }
@@ -141,9 +142,10 @@ py::dict trigger(uint64_t timestamp) {
   py::dict data_dict;
   data_dict["motion_t"] = py::array_t<double>(py::array::ShapeContainer({(long) 4, 4}), motionT.data());
   data_dict["motion_heading"] = motionR;
-  data_dict["ins_valid"] = valid;
+  data_dict["ins_valid"] = ins_valid;
+  data_dict["motion_valid"] = motion_valid;
 
-  if (valid) {
+  if (ins_valid) {
     py::dict ins_data;
     ins_data["timestamp"] = gps.gps_timestamp;
     ins_data["gps_week"] = gps.gps_week;

@@ -228,7 +228,7 @@ void InsDriver::getMotion(std::vector<double> &motionT, double &motionR, uint64_
     motionR = getYawAngle(motion_TR);
 }
 
-bool InsDriver::trigger(uint64_t timestamp, std::vector<double> &motionT,
+bool InsDriver::trigger(uint64_t timestamp, bool &motion_valid, std::vector<double> &motionT,
                         double &motionR, InsDataType &ins, std::vector<InsDataType> &imu) {
     std::lock_guard<std::mutex> lck(mMutex);
     if (mTimedData.size() < 2) {
@@ -262,14 +262,19 @@ bool InsDriver::trigger(uint64_t timestamp, std::vector<double> &motionT,
     }
 
     // Get valid data
-    if (!mFirstTrigger) {
-        getMotion(motionT, motionR, mLastTriggerTime, timestamp);
+    ins = mQueuedData.back();
+    std::swap(imu, mQueuedData);
+
+    // estimate the realtive motion
+    if (!mFirstTrigger && !mUseSeperateGPS) {
+        if (ins.Status != 0 || fabs(ins.longitude) > 1e-4 || fabs(ins.latitude) > 1e-4) {
+            getMotion(motionT, motionR, mLastTriggerTime, timestamp);
+            motion_valid = true;
+        }
     }
 
     mFirstTrigger = false;
     mLastTriggerTime = timestamp;
-    ins = mQueuedData.back();
-    std::swap(imu, mQueuedData);
     return true;
 }
 

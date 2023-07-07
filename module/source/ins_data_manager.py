@@ -64,9 +64,10 @@ class InsDataManager(DataManagerTemplate):
                                                          data_dict['ins_data']['acc_y'],
                                                          data_dict['ins_data']['acc_z']]], dtype=np.float64)
 
-            motion_data = self.ins.trigger(data_dict['frame_start_timestamp'])
-            data_dict['motion_t'] = motion_data['motion_t']
-            data_dict['motion_heading'] = motion_data['motion_heading']
+            data = self.ins.trigger(data_dict['frame_start_timestamp'])
+            data_dict['motion_valid']   = data['motion_valid']
+            data_dict['motion_t']       = data['motion_t']
+            data_dict['motion_heading'] = data['motion_heading']
 
         return data_dict
 

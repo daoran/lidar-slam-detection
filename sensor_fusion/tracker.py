@@ -83,7 +83,7 @@ class Tracker(DetectTemplate):
     def process(self, input_dict):
         motion_t = input_dict.pop('motion_t')
         motion_heading = input_dict.pop('motion_heading')
-        ins_valid = input_dict.pop('ins_valid')
+        ins_valid = input_dict.pop('motion_valid')
         timestep = input_dict.pop('timestep') / 1000000.0
 
         track_dict = prepare_tracking(input_dict, self.cls_dict)
