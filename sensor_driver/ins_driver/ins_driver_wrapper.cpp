@@ -13,9 +13,9 @@ namespace py=pybind11;
 
 static std::unique_ptr<InsDriver> ins(nullptr);
 
-void create_ins() {
+void create_ins(std::string ins_type) {
   // new a ins driver
-  ins.reset(new InsDriver());
+  ins.reset(new InsDriver(ins_type));
   LOG_INFO("ins open success");
 }
 
@@ -190,7 +190,9 @@ py::dict trigger(uint64_t timestamp) {
 PYBIND11_MODULE(ins_driver_ext, m) {
     m.doc() = "ins driver python interface";
 
-    m.def("create_ins", &create_ins, "create ins");
+    m.def("create_ins", &create_ins, "create ins",
+          py::arg("ins_type")
+    );
 
     m.def("set_external_param", &set_external_param, "set external param",
           py::arg("x"), py::arg("y"), py::arg("z"),

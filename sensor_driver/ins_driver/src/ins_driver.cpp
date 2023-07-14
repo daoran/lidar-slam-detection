@@ -9,7 +9,6 @@
 #include "UDPServer.h"
 #include "SerialDriver.h"
 #include "UTMProjector.h"
-#include "InterProcess.h"
 
 const double PI = 3.1415926535897932384626433832795;
 
@@ -39,11 +38,10 @@ Transform computeRTKTransform(InsDataType &data) {
     return getTransformFromRPYT(dataX, dataY, data.altitude, -data.heading, data.pitch, data.roll);
 }
 
-InsDriver::InsDriver() {
+InsDriver::InsDriver(std::string ins_type) : mInsType(ins_type) {
     mMode = modeType::online;
     mUseSeperateIMU = false;
     mUseSeperateGPS = false;
-    mUnixClient.reset(new UnixSocketClient("/tmp/imu_data.sock"));
     mStaticTransform = Transform();
     mValidMessageCount = 0;
     mReceiveMessageCount = 0;
@@ -80,6 +78,14 @@ void InsDriver::startRun(int portIn, std::string device) {
 
     // GPSD
     mGPSThread.reset(new std::thread(&InsDriver::run_gps, this));
+
+    // SLAM odometry
+    mCore = create_core();
+    mCore->subscribe("slam.odometry", &InsDriver::onPoseMessage, this);
+    mCore->start();
+
+    // Unix socket relay
+    mUnixClient.reset(new UnixSocketClient("/tmp/imu_data.sock"));
 }
 
 void InsDriver::stopRun() {
@@ -181,21 +187,46 @@ void InsDriver::setData(InsDataType &data, uint64_t timestamp) {
     mTimedData.emplace_back(data);
 }
 
-Transform InsDriver::getInterplatedPosition(uint64_t t) {
+uint64_t getStamp(InsDataType &data) {
+    return uint64_t(data.gps_timestamp);
+}
+uint64_t getStamp(nav_msgs::Odometry &data) {
+    return uint64_t(data.header.stamp);
+}
+Transform getTransform(InsDataType &data) {
+    return computeRTKTransform(data);
+}
+
+Transform getTransform(nav_msgs::Odometry &data) {
+    Eigen::Matrix4d odometry = Eigen::Matrix4d::Identity();
+    Eigen::Quaterniond q;
+    q.x() = data.pose.pose.orientation.x;
+    q.y() = data.pose.pose.orientation.y;
+    q.z() = data.pose.pose.orientation.z;
+    q.w() = data.pose.pose.orientation.w;
+    odometry.block<3, 3>(0, 0) = q.normalized().toRotationMatrix();
+    odometry(0, 3) = data.pose.pose.position.x;
+    odometry(1, 3) = data.pose.pose.position.y;
+    odometry(2, 3) = data.pose.pose.position.z;
+    return Transform(odometry);
+}
+
+template <typename T>
+Transform getInterplatedPosition(T &data, uint64_t t) {
     int idx0, idx1;
-    if (t <= mTimedData.front().gps_timestamp) {
+    if (t <= getStamp(data.front())) {
         idx0 = 0;
         idx1 = 1;
-    } else if (t >= mTimedData.back().gps_timestamp) {
-        idx0 = mTimedData.size() - 2;
-        idx1 = mTimedData.size() - 1;
+    } else if (t >= getStamp(data.back())) {
+        idx0 = data.size() - 2;
+        idx1 = data.size() - 1;
     } else {
-        int begin = 0, end = mTimedData.size() - 1, mid = 0;
+        int begin = 0, end = data.size() - 1, mid = 0;
         while(begin < end) {
             mid = (begin + end) / 2;
-            if (mTimedData[mid].gps_timestamp > t) {
+            if (getStamp(data[mid]) > t) {
                 end = mid;
-            } else if (mTimedData[mid + 1].gps_timestamp < t) {
+            } else if (getStamp(data[mid + 1]) < t) {
                 begin = mid + 1;
             } else {
                 break;
@@ -205,19 +236,25 @@ Transform InsDriver::getInterplatedPosition(uint64_t t) {
         idx1 = mid + 1;
     }
 
-    double t_diff_ratio =
-      (static_cast<double>(t) - mTimedData[idx0].gps_timestamp) /
-       static_cast<double>(mTimedData[idx1].gps_timestamp - mTimedData[idx0].gps_timestamp);
-    Transform T0 = computeRTKTransform(mTimedData[idx0]);
-    Transform T1 = computeRTKTransform(mTimedData[idx1]);
+    double t_diff_ratio = (static_cast<double>(t) - getStamp(data[idx0])) / static_cast<double>(getStamp(data[idx1]) - getStamp(data[idx0]));
+    Transform T0 = getTransform(data[idx0]);
+    Transform T1 = getTransform(data[idx1]);
     Vector6 diff_vector = (T0.inverse() * T1).log();
     Transform out = T0 * Transform::exp(t_diff_ratio * diff_vector);
     return out;
 }
 
-void InsDriver::getMotion(std::vector<double> &motionT, double &motionR, uint64_t t0, uint64_t t1) {
-    Transform lastTransform = getInterplatedPosition(t0);
-    Transform currentTransform = getInterplatedPosition(t1);
+bool InsDriver::getMotion(std::vector<double> &motionT, double &motionR, uint64_t t0, uint64_t t1) {
+    Transform lastTransform, currentTransform;
+    if (mPoseData.size() >= 2 && t0 > getStamp(mPoseData.front()) && t1 < getStamp(mPoseData.back())) {
+        lastTransform    = getInterplatedPosition(mPoseData, t0);
+        currentTransform = getInterplatedPosition(mPoseData, t1);
+    } else if (mInsType.compare("6D") == 0) {
+        lastTransform    = getInterplatedPosition(mTimedData, t0);
+        currentTransform = getInterplatedPosition(mTimedData, t1);
+    } else {
+        return false;
+    }
 
     Transform motion_TR = mStaticTransform.inverse() * (currentTransform.inverse() * lastTransform) * mStaticTransform;
     Matrix m = motion_TR.matrix();
@@ -226,6 +263,7 @@ void InsDriver::getMotion(std::vector<double> &motionT, double &motionR, uint64_
     motionT[8]  = m(2, 0); motionT[9]  = m(2, 1); motionT[10] = m(2, 2); motionT[11] = m(2, 3);
     motionT[12] = m(3, 0); motionT[13] = m(3, 1); motionT[14] = m(3, 2); motionT[15] = m(3, 3);
     motionR = getYawAngle(motion_TR);
+    return true;
 }
 
 bool InsDriver::trigger(uint64_t timestamp, bool &motion_valid, std::vector<double> &motionT,
@@ -266,16 +304,30 @@ bool InsDriver::trigger(uint64_t timestamp, bool &motion_valid, std::vector<doub
     std::swap(imu, mQueuedData);
 
     // estimate the realtive motion
-    if (!mFirstTrigger && !mUseSeperateGPS) {
-        if (ins.Status != 0 || fabs(ins.longitude) > 1e-4 || fabs(ins.latitude) > 1e-4) {
-            getMotion(motionT, motionR, mLastTriggerTime, timestamp);
-            motion_valid = true;
-        }
+    if (!mFirstTrigger) {
+        motion_valid = getMotion(motionT, motionR, mLastTriggerTime, timestamp);
     }
 
     mFirstTrigger = false;
     mLastTriggerTime = timestamp;
     return true;
+}
+
+void InsDriver::onPoseMessage(const zcm::ReceiveBuffer* rbuf, const std::string& chan, const nav_msgs::Odometry *msg) {
+    std::lock_guard<std::mutex> lck(mMutex);
+    if (mPoseData.size() > 0) {
+        int64_t stamp_diff = msg->header.stamp - mPoseData.back().header.stamp;
+        if (stamp_diff <= 0 || stamp_diff > 1000000) { // non-continuous or unorder
+            LOG_WARN("slam.odometry stamp is invalid, {}, {}", mPoseData.back().header.stamp, msg->header.stamp);
+            mPoseData.clear();
+            return;
+        }
+    }
+
+    if (mPoseData.size() > 100) {
+        mPoseData.erase(mPoseData.begin());
+    }
+    mPoseData.emplace_back(*msg);
 }
 
 void InsDriver::run_udp() {

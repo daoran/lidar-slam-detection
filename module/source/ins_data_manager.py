@@ -8,7 +8,7 @@ from ..export_interface import register_interface
 
 class InsDataManager(DataManagerTemplate):
     def __init__(self, cfg, data_cfg, logger=None):
-        self.ins = InsDriver(port=cfg.ins.port, device=cfg.ins.device,
+        self.ins = InsDriver(port=cfg.ins.port, device=cfg.ins.device, ins_type=cfg.ins.ins_type,
                              ex_param=cfg.ins.extrinsic_parameters, logger=logger)
         self.ins.open()
 

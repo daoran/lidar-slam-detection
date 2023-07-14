@@ -182,7 +182,7 @@ bool SLAM::setup() {
   if (mMappingMode != modeType::Localization) {
     mThreadStart = true;
     mMappingThread.reset(new std::thread(&SLAM::runMappingThread, this));
-  } else if (mRunMode == runType::Online && mOutput && mZeroUtm) {
+  } else {
     mThreadStart = true;
     mLocalizationThread.reset(new std::thread(&SLAM::runLocalizationThread, this));
   }
@@ -344,8 +344,7 @@ bool SLAM::run(const uint64_t &timestamp,
 
     // lat, lon
     if (mSlam->isInited() && mZeroUtm) {
-      mProjector->FromLocalToGlobal((*mZeroUtm)(0) + odom(0, 3), (*mZeroUtm)(1) + odom(1, 3),
-                                    pose.latitude, pose.longitude);
+      mProjector->FromLocalToGlobal((*mZeroUtm)(0) + odom(0, 3), (*mZeroUtm)(1) + odom(1, 3), pose.latitude, pose.longitude);
       pose.altitude = (*mZeroUtm)(2) + odom(2, 3);
     } else {
       pose.latitude  = 0;
@@ -422,15 +421,14 @@ void SLAM::runLocalizationThread() {
 
     RTKType rtk;
     bool found = parseGPCHC(message, rtk);
-    if (found || !isImuOnline) {
+    if (found || (mRunMode == runType::Online && !isImuOnline)) {
       Eigen::Matrix4d pose;
       bool pose_valid = false;
       if (isImuOnline) {
         pose_valid = mSlam->getTimedPose(rtk, pose);
-      }
-      if (!pose_valid) {
+      } else {
         rtk.timestamp = getCurrentTime();
-        pose_valid = mSlam->getTimedPose(getCurrentTime(), pose);
+        pose_valid = mSlam->getTimedPose(rtk.timestamp, pose);
         LOG_WARN("localization has no imu to predict, only based on motion model");
       }
 
@@ -446,9 +444,20 @@ void SLAM::runLocalizationThread() {
           isLocalizationOutput = true;
           LOG_INFO("localization output switch to fusion mode");
         }
-        mProjector->FromLocalToGlobal((*mZeroUtm)(0) + pose(0, 3), (*mZeroUtm)(1) + pose(1, 3),
-                                    rtk.latitude, rtk.longitude);
-        rtk.altitude = (*mZeroUtm)(2) + pose(2, 3);
+        if (mZeroUtm) {
+          mProjector->FromLocalToGlobal((*mZeroUtm)(0) + pose(0, 3), (*mZeroUtm)(1) + pose(1, 3), rtk.latitude, rtk.longitude);
+          rtk.altitude = (*mZeroUtm)(2) + pose(2, 3);
+        } else {
+          rtk.latitude  = 0;
+          rtk.longitude = 0;
+          rtk.altitude  = 0;
+        }
+
+        // publish fusion pose message
+        nav_msgs::Odometry odometry_message;
+        odometry_message.header.stamp = rtk.timestamp;
+        fromOdometry(pose, odometry_message);
+        get_core()->publish("slam.odometry", &odometry_message);
 
         double x, y, z;
         double yaw, pitch, roll;
@@ -467,14 +476,6 @@ void SLAM::runLocalizationThread() {
         rtk.pitch = pitch;
         rtk.roll = roll;
         message = formatGPCHC(rtk);
-
-        // publish fusion pose message
-        if (get_core_enable()) {
-          nav_msgs::Odometry odometry_message;
-          odometry_message.header.stamp = rtk.timestamp;
-          fromOdometry(pose, odometry_message);
-          PUBLISH_MSG("slam.odometry", odometry_message);
-        }
       }
 
       // publish localization message
@@ -487,7 +488,9 @@ void SLAM::runLocalizationThread() {
         PUBLISH_MSG("slam.nav", nav_messgae);
       }
 
-      slamUDPServer->UDPSendto(mDestinationIP, mDestinationPort, message, message.length());
+      if (mOutput) {
+        slamUDPServer->UDPSendto(mDestinationIP, mDestinationPort, message, message.length());
+      }
     }
   }
 }

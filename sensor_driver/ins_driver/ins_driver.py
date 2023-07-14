@@ -1,16 +1,17 @@
 import ins_driver_ext as driver
 
 class InsDriver():
-    def __init__(self, port, device,
+    def __init__(self, port, device, ins_type,
                  ex_param = [0, 0, 0, 0, 0, 0],
                  logger = None):
         self.port = port
         self.device = device
+        self.ins_type = ins_type
         self.ex_param = ex_param
         self.logger = logger
 
     def open(self):
-        driver.create_ins()
+        driver.create_ins(self.ins_type)
         driver.set_external_param(self.ex_param[0], self.ex_param[1], self.ex_param[2],
                                   self.ex_param[5], self.ex_param[4], self.ex_param[3])
 
