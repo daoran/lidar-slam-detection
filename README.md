@@ -91,7 +91,7 @@ LSD is NOT built on the Robot Operating System (ROS), but we provides some tools
 
 ## Embedded Platform
 
-The LSD is tested on Xavier-NX, Xavier-AGX and Orin with JetPack5.0.2, [Installation](docs/nvidia/README.md)
+The LSD is tested on Orin with JetPack5.0.2, [Installation](docs/nvidia/README.md)
 
 # License
 
