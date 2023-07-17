@@ -27,7 +27,7 @@ LSD currently supports many features:
 | Performance (Waymo Open Dataset) | Vec_L1    | Vec_L2  | Ped_L1  | Ped_L2  | Cyc_L1  | Cyc_L2  |
 |--------------------------|----------:|:-------:|:-------:|:-------:|:-------:|:-------:|
 | PointPillar              | 73.71/73.12|65.71/65.17|71.70/60.90|63.52/53.78|65.30/63.77 |63.12/61.64|
-| [**CenterPoint-VoxelNet**](https://github.com/w111liang222/lidar-slam-detection/tree/v2.0) | **74.75/74.24**|**66.09/65.63**|**77.66/71.54**|**68.57/63.02**|**72.03/70.93** |**69.63/68.57**|
+| **CenterPoint-VoxelNet** | **74.75/74.24**|**66.09/65.63**|**77.66/71.54**|**68.57/63.02**|**72.03/70.93** |**69.63/68.57**|
 
 **Note: the CenterPoint-VoxelNet is built on [libspconv](https://github.com/NVIDIA-AI-IOT/Lidar_AI_Solution) and the GPU with SM80+ is required.**
 
@@ -35,7 +35,7 @@ LSD currently supports many features:
 
 # Prerequisites
 
-LSD can be worked both on x86 PC(with GPU, **SM 80+**) and nvidia Orin.
+LSD can be worked both on x86 PC(with GPU, **SM 80+**) and nvidia Orin ([old version](https://github.com/w111liang222/lidar-slam-detection/tree/v1.3.0) can be worked on Xavier NX/AGX).
 
 ### Basic Enviroment
 
@@ -47,7 +47,7 @@ nvidia-docker2 is needed to install firstly [Installation](docs/docker.md).
 
 A x86_64 docker image is provided to test.
 ```bash
-sudo docker pull 15liangwang/lsd-cuda
+sudo docker pull 15liangwang/lsd-cuda # sudo docker pull 15liangwang/auto-ipu, if you don't have GPU
 sudo docker run --gpus all -it -d --net=host --privileged --shm-size=4g --name="LSD" -v /media:/root/exchange 15liangwang/lsd-cuda
 sudo docker exec -it LSD /bin/bash
 ```
@@ -55,7 +55,7 @@ sudo docker exec -it LSD /bin/bash
 Clone this repository and build the source code
 ```bash
 cd /home/znqc/work/
-git clone https://github.com/w111liang222/lidar-slam-detection.git -b v2.0
+git clone https://github.com/w111liang222/lidar-slam-detection.git
 cd lidar-slam-detection/
 unzip slam/data/ORBvoc.zip -d slam/data/
 python setup.py install
