@@ -71,7 +71,7 @@ class ImuCalib():
 
         dist = np.linalg.norm(position - ImuCalib.last_position, ord=2)
         rota = np.linalg.norm(rotation - ImuCalib.last_rotation, ord=2)
-        if dist > 2.0 or rota > 2.0:
+        if dist > 2.0 or rota > 5.0:
             ImuCalib.last_position = position
             ImuCalib.last_rotation = rotation
             return True

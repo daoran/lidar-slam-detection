@@ -20,7 +20,7 @@ export interface Props {
   t?: (x: string | undefined) => string;
 }
 
-const kMAX_FRAME = 200;
+const kMAX_FRAME = 50;
 
 function Calib({ setCalibEnable, setStatusString, t = (x) => x || "" }: Props, ref: any) {
   const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));

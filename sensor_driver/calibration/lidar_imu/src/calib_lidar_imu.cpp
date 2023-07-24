@@ -12,7 +12,7 @@ CalibLidarImu::CalibLidarImu()
     no_rtk_flag = false;
 
     // init downsample object
-    downer_.setLeafSize(0.1, 0.1, 0.1);
+    downer_.setLeafSize(0.2, 0.2, 0.2);
 
 // init register object
 #ifdef HAVE_CUDA_ENABLE
