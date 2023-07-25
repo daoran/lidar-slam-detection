@@ -130,8 +130,8 @@ class PerceptionServer:
     def reboot(self, is_confirmed, hostname):
         return self.perception.do_reboot(is_confirmed, hostname)
 
-    def start_record(self):
-        self.perception.call('frame.start_record')
+    def start_record(self, directory = None):
+        self.perception.call('frame.start_record', dict(directory=directory))
         return ""
 
     def stop_record(self):

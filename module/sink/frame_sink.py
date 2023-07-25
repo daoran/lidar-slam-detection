@@ -61,7 +61,7 @@ class FrameSink(SinkTemplate):
             _, _, avail, _ = get_disk_info(disk_name)
             self.logger.info('avail %d, min_req %d, delete the oldest log %s' % (avail, min_require_size, delete_dir))
 
-    def start(self):
+    def start(self, directory):
         if self.is_start:
             return
         self.has_disk, self.disk_name = has_extension_disk()
@@ -69,7 +69,7 @@ class FrameSink(SinkTemplate):
             return
 
         self.free_disk_space(self.disk_name)
-        if not self.create_new_log(self.disk_name):
+        if not self.create_new_log(self.disk_name, directory):
             return
 
         self.start_wall_time = time.monotonic()
@@ -116,8 +116,8 @@ class FrameSink(SinkTemplate):
             frame_error  = self.error_num,
         )
 
-    def create_new_log(self, disk_name):
-        self.file_path = disk_name + '/' + ('lp_log/%s' % datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    def create_new_log(self, disk_name, directory = None):
+        self.file_path = disk_name + '/' + ('lp_log/%s' % (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') if directory is None else directory))
         success = do_mkdir(self.file_path)
         if success:
             self.logger.info('mkdir success: %s' % self.file_path)
