@@ -21,6 +21,9 @@ endif()
 set(CMAKE_C_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS "-std=c++17 -Wno-deprecated-declarations")
 set(CMAKE_BUILD_TYPE "Release")
+string(APPEND CMAKE_CUDA_FLAGS " -gencode arch=compute_80,code=sm_80")
+string(APPEND CMAKE_CUDA_FLAGS " -gencode arch=compute_86,code=sm_86")
+string(APPEND CMAKE_CUDA_FLAGS " -gencode arch=compute_87,code=sm_87")
 
 
 include_directories (/usr/local/include)
