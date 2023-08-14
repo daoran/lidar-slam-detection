@@ -4,14 +4,15 @@ SCN_ONNX_FILE: 'sensor_inference/detection_lidar_scn.onnx'
 RPN_ONNX_FILE: 'sensor_inference/detection_lidar_rpn.onnx'
 RPN_TRT_FILE:  'sensor_inference/detection_lidar_rpn.trt'
 DATA_CONFIG:
+    POINT_FRAME_NUM: 4
     POINT_CLOUD_RANGE: [-76.8, -76.8, -2, 76.8, 76.8, 4]
     VOXELIZATION:
-        MAX_POINTS: 200000
+        MAX_POINTS: 500000
         VOXEL_SIZE: [0.1, 0.1, 0.15]
         MAX_POINTS_PER_VOXEL: 5
         MAX_NUMBER_OF_VOXELS: {
-        'train': 150000,
-        'test': 150000
+        'train': 400000,
+        'test': 400000
         }
 
 MODEL:
