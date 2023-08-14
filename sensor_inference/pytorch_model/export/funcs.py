@@ -21,10 +21,10 @@
 
 import torch
 import collections
-from sensor_inference.pytorch_model.lidar_model.spconv_backbone import VoxelResBackBone8x
+from sensor_inference.pytorch_model.object_model.spconv_backbone import VoxelResBackBone8x
 from spconv.pytorch import SparseSequential
 from spconv.pytorch import conv
-from sensor_inference.pytorch_model.lidar_model.spconv_backbone import SparseBasicBlock
+from sensor_inference.pytorch_model.object_model.spconv_backbone import SparseBasicBlock
 import cumm.tensorview as tv
 import numpy as np
 

@@ -1,9 +1,11 @@
 board:
     inference_engine:
-        lidar_cfg_file: sensor_inference/cfgs/detection_lidar.yaml
-        image_cfg_file: sensor_inference/cfgs/detection_image.yaml
-        # deactive_lidar: true
-        deactive_image: true
+        detection_capability:
+            object: true
+            trafficlight: false
+        detection_config:
+            object: sensor_inference/cfgs/detection_object.yaml
+            trafficlight: sensor_inference/cfgs/detection_trafficlight.yaml
 
 pipeline: [['Source', 'SLAM', 'Sink']]
 

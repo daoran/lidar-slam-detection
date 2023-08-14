@@ -101,14 +101,12 @@ class DetectManager(ManagerTemplate):
                 frame_dict = dict()
                 continue
         # wait until get tracking result or thread quit
-        while self.system.is_initialized and frame_dict['do_detection'] and (frame_dict['image_valid'] or frame_dict['lidar_valid']):
+        while self.system.is_initialized and frame_dict['do_detection']:
             track_dict = self.tracking.get_output(block=True, timeout=1.0)
             if track_dict:
                 if frame_dict['frame_start_timestamp'] != track_dict['frame_start_timestamp']:
                     self.logger.warn('tracking output order is wrong!')
                 else:
-                    track_dict.pop('lidar_valid', None)
-                    track_dict.pop('image_valid', None)
                     frame_dict.update(track_dict)
                     break
             else:
