@@ -131,7 +131,7 @@ def serialize_to_string(result_dict, display_on_image=False, use_raw_image=False
         det.pose.latitude = pose_dict['latitude']
         det.pose.longitude = pose_dict['longitude']
         det.pose.altitude = pose_dict['altitude']
-        det.pose.status = int(pose_dict['status'])
+        det.pose.status = int(pose_dict['Status'])
         det.pose.state = pose_dict['state']
     elif 'ins_data' in result_dict and result_dict['ins_valid']:
         det.pose.x = 0

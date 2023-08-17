@@ -93,7 +93,7 @@ py::dict process(py::dict& points, py::dict &points_attr, py::dict& image_dict, 
   pose_dict["latitude"]    = pose.latitude;
   pose_dict["longitude"]   = pose.longitude;
   pose_dict["altitude"]    = pose.altitude;
-  pose_dict["status"]      = pose.status;
+  pose_dict["Status"]      = pose.status;
   pose_dict["state"]       = pose.state;
   pose_dict["timestamp"]   = pose.timestamp;
   pose_dict["odom_matrix"] = eigen_to_numpy(pose.T);
