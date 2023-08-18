@@ -73,7 +73,7 @@ def main():
     scn = model.backbone_3d
     scn = funcs.layer_fusion_bn_relu(scn)
 
-    voxels = torch.zeros(1, 4).half().cuda()
+    voxels = torch.zeros(1, 5).half().cuda()
     coors  = torch.zeros(1, 4).int().cuda()
     exptool.export_onnx(scn.half(), voxels, coors, 1, None, cfg.SCN_ONNX_FILE, None)
 
@@ -82,7 +82,7 @@ def main():
     model.load_params_from_file(filename=args.ckpt, to_cpu=True)
     model = model.cuda().eval()
 
-    spatial_features = model.backbone_3d(torch.zeros(1, 4).cuda(), torch.zeros(1, 4).int().cuda())
+    spatial_features = model.backbone_3d(torch.zeros(1, 5).cuda(), torch.zeros(1, 4).int().cuda())
     rpn_model = RPN(model)
     rpn_model = rpn_model.cuda().eval()
 

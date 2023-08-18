@@ -108,7 +108,7 @@ def symbolic_sparse_convolution(self, ilayer, y, x):
         ConvAlgo.Native : "Native",
     }
 
-    output_bound = 200000
+    output_bound = 300000
     if hasattr(self, "output_bound"):
         output_bound = self.output_bound
 
@@ -171,7 +171,7 @@ def symbolic_sparse_convolution_quant(self, ilayer, y, x):
         tv.gemm.Activation.LeakyReLU : "LeakyReLU"
     }
 
-    output_bound = 200000
+    output_bound = 300000
     if hasattr(self, "output_bound"):
         output_bound = self.output_bound
 

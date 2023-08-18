@@ -33,8 +33,8 @@ class PointPillar(nn.Module):
     def build_networks(self):
         model_info_dict = {
             'module_list': [],
-            'num_rawpoint_features': 4,
-            'num_point_features': 4,
+            'num_rawpoint_features': 5,
+            'num_point_features': 5,
             'grid_size': self.dataset.grid_size,
             'point_cloud_range': self.dataset.point_cloud_range,
             'voxel_size': self.dataset.voxel_size
