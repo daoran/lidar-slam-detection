@@ -25,6 +25,7 @@
 #include <cuda_fp16.h>
 #include "spconv/engine.hpp"
 #include "tensorrt.hpp"
+#include "preprocess.hpp"
 #include "voxelization.hpp"
 
 
@@ -41,12 +42,14 @@
 struct LidarEngineParameter {
   std::string scn_file;
   std::string rpn_file;
+  PreprocessParameter proprecess;
   VoxelizationParameter voxelization;
 };
 
 class LidarInference {
   private:
     LidarEngineParameter parameter_;
+    std::shared_ptr<Preprocess> preprocessor_;
     std::shared_ptr<Voxelization> voxelizer_;
     std::shared_ptr<spconv::Engine> scn_engine_;
     std::shared_ptr<TensorRT::Engine> rpn_engine_;
@@ -71,7 +74,7 @@ class LidarInference {
     LidarInference(LidarEngineParameter parameter);
     ~LidarInference();
 
-    int forward(const float* points, int point_num);
+    int forward(const float* points, int point_num, const float* motion, bool runtime);
     void get_output(float* cls_preds, float* box_preds, int* label_preds);
 };
 

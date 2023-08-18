@@ -191,8 +191,6 @@ nvtype::Int3 VoxelizationParameter::compute_grid_size(const nvtype::Float3 &max_
 class VoxelizationImplement : public Voxelization {
  public:
   virtual ~VoxelizationImplement() {
-    if (points_device_)     checkRuntime(cudaFree(points_device_));
-
     if (hash_table_)        checkRuntime(cudaFree(hash_table_));
     if (voxels_)            checkRuntime(cudaFree(voxels_));
     if (d_voxel_features_)  checkRuntime(cudaFree(d_voxel_features_));
@@ -206,14 +204,12 @@ class VoxelizationImplement : public Voxelization {
 
   bool init(VoxelizationParameter param) {
     this->param_ = param;
-    this->points_size_         = param_.max_points * param_.num_feature * sizeof(float);
     this->hash_table_size_     = param_.max_points * 2 * 2 * sizeof(unsigned int);
     this->voxels_size_         = param_.max_voxels * param_.max_points_per_voxel * param_.num_feature * sizeof(float);
     this->voxel_features_size_ = param_.max_voxels * param_.max_points_per_voxel * param_.num_feature * sizeof(half);
     this->voxel_num_size_      = param_.max_voxels * sizeof(unsigned int);
     this->voxel_idxs_size_     = param_.max_voxels * 4 * sizeof(unsigned int);
 
-    checkRuntime(cudaMalloc(&points_device_, points_size_));
     checkRuntime(cudaMalloc(&hash_table_, hash_table_size_));
     checkRuntime(cudaMalloc(&voxels_, voxels_size_));
     checkRuntime(cudaMalloc(&d_voxel_features_, voxel_features_size_));
@@ -226,12 +222,8 @@ class VoxelizationImplement : public Voxelization {
   }
 
   // points and voxels must be of half type
-  virtual void forward(const float *points, int num_points, CoordinateOrder output_order, void *stream) override {
+  virtual void forward(float *points_device_, int num_points, CoordinateOrder output_order, void *stream) override {
     cudaStream_t _stream = reinterpret_cast<cudaStream_t>(stream);
-
-    // copy points from host to device
-    size_t bytes_points = num_points * param_.num_feature * sizeof(float);
-    checkRuntime(cudaMemcpyAsync(points_device_, points, bytes_points, cudaMemcpyHostToDevice, _stream));
 
     // reset variables
     checkRuntime(cudaMemsetAsync(hash_table_, 0xff, hash_table_size_, _stream));
@@ -274,8 +266,6 @@ class VoxelizationImplement : public Voxelization {
   VoxelizationParameter param_;
   int real_num_voxels_ = 0;
 
-  float* points_device_ = nullptr;
-
   unsigned int *hash_table_ = nullptr;
   float *voxels_ = nullptr;
   half *d_voxel_features_ = nullptr;
@@ -286,7 +276,6 @@ class VoxelizationImplement : public Voxelization {
   unsigned int *d_real_num_voxels_ = nullptr;
   unsigned int *h_real_num_voxels_ = nullptr;
 
-  unsigned int points_size_;
   unsigned int hash_table_size_;
   unsigned int voxels_size_;
   unsigned int voxel_features_size_;

@@ -52,7 +52,7 @@ struct VoxelizationParameter {
 
 class Voxelization {
  public:
-  virtual void forward(const float* points, int num_points, CoordinateOrder output_order, void* stream) = 0;
+  virtual void forward(float* points, int num_points, CoordinateOrder output_order, void* stream) = 0;
 
   virtual int num_voxels() = 0;
   virtual unsigned int get_output(half** d_voxel_features, unsigned int** d_voxel_indices) = 0;

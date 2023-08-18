@@ -5,7 +5,8 @@ if(CUDA_FOUND)
     set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
     project(voxelization LANGUAGES CXX CUDA)
     add_definitions(-DHAVE_CUDA_ENABLE)
-    set(NVCC_FILES "voxelization_kernel.cu")
+    set(VOXELIZE_NVCC_FILES   "voxelization_kernel.cu")
+    set(PREPROCESS_NVCC_FILES "preprocess_kernel.cu")
 else()
     project(voxelization LANGUAGES CXX)
     set(CUDA_INCLUDE_DIRS "")
@@ -28,7 +29,8 @@ include_directories(
 
 add_library(voxelization SHARED
     voxelization.cpp
-    ${NVCC_FILES}
+    ${VOXELIZE_NVCC_FILES}
+    ${PREPROCESS_NVCC_FILES}
 )
 
 target_include_directories(voxelization

@@ -16,10 +16,14 @@ static std::shared_ptr<LidarInference> s_lidar_engine(nullptr);
 void inference_init(std::string scn_file, std::string rpn_file,
                     std::vector<float> voxel_size,
                     std::vector<float> coors_range, int max_points,
-                    int max_voxels, int max_points_use) {
+                    int max_voxels, int max_points_use, int frame_num) {
   LidarEngineParameter parameter;
   parameter.scn_file = scn_file;
   parameter.rpn_file = rpn_file;
+
+  parameter.proprecess.max_points   = max_points_use;
+  parameter.proprecess.num_feature  = 5;
+  parameter.proprecess.max_frame_num= frame_num;
 
   parameter.voxelization.min_range  = nvtype::Float3(coors_range[0], coors_range[1], coors_range[2]);
   parameter.voxelization.max_range  = nvtype::Float3(coors_range[3], coors_range[4], coors_range[5]);
@@ -33,14 +37,14 @@ void inference_init(std::string scn_file, std::string rpn_file,
   s_lidar_engine = create_engine(parameter);
 }
 
-void inference_forward(py::array_t<float> points,
+void inference_forward(py::array_t<float> points, py::array_t<float> motion, bool runtime,
                        py::array_t<float> cls_preds, py::array_t<float> box_preds, py::array_t<int> label_preds) {
   if (s_lidar_engine == nullptr) {
     LOG_ERROR("Lidar engine is not initialzied");
     return;
   }
 
-  s_lidar_engine->forward(points.data(), int(points.unchecked<2>().shape(0)));
+  s_lidar_engine->forward(points.data(), int(points.unchecked<2>().shape(0)), motion.data(), runtime);
   s_lidar_engine->get_output(cls_preds.mutable_data(), box_preds.mutable_data(), label_preds.mutable_data());
 }
 
@@ -49,10 +53,10 @@ void inference_forward(py::array_t<float> points,
 void inference_init(std::string scn_file, std::string rpn_file,
                     std::vector<float> voxel_size,
                     std::vector<float> coors_range, int max_points,
-                    int max_voxels, int max_points_use) {
+                    int max_voxels, int max_points_use, int frame_num) {
 }
 
-void inference_forward(py::array_t<float> points,
+void inference_forward(py::array_t<float> points, py::array_t<float> motion, bool runtime,
                        py::array_t<float> cls_preds, py::array_t<float> box_preds, py::array_t<int> label_preds) {
 }
 

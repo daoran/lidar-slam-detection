@@ -31,6 +31,7 @@ LidarInference::LidarInference(LidarEngineParameter parameter)
 {
     parameter_ = parameter;
     max_points = parameter.voxelization.max_points;
+    preprocessor_ = create_preprocess(parameter.proprecess);
     voxelizer_ = create_voxelization(parameter.voxelization);
     scn_engine_ = spconv::load_engine_from_onnx(parameter.scn_file);
     rpn_engine_ = TensorRT::load(parameter.rpn_file);
@@ -62,11 +63,13 @@ LidarInference::~LidarInference()
     checkCudaErrors(cudaFree(d_label_preds));
 }
 
-int LidarInference::forward(const float* points, int point_num)
+int LidarInference::forward(const float* points, int point_num, const float* motion, bool runtime)
 {
     // voxelization
     int num_points = std::min(point_num, max_points);
-    voxelizer_->forward(points, num_points, CoordinateOrder::ZYX, stream);
+
+    preprocessor_->forward(points, num_points, motion, runtime, stream);
+    voxelizer_->forward(preprocessor_->get_points(), preprocessor_->get_points_num(), CoordinateOrder::ZYX, stream);
     unsigned int valid_num = voxelizer_->get_output(&d_voxel_features, &d_voxel_indices);
 
     // spconv

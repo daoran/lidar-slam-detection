@@ -17,10 +17,11 @@ def build_engine(config, scn_file, rpn_file):
         max_points     = config.VOXELIZATION.MAX_POINTS_PER_VOXEL,
         max_voxels     = config.VOXELIZATION.MAX_NUMBER_OF_VOXELS['test'],
         max_points_use = config.VOXELIZATION.MAX_POINTS,
+        frame_num      = config.POINT_FRAME_NUM,
     )
 
-    def engine(points):
-        return inference_forward(points)
+    def engine(points, motion_t, realtime):
+        return inference_forward(points, motion_t, realtime)
 
     return engine
 
@@ -34,7 +35,6 @@ class ObjectInfer(InferBase):
 
     def build_engine(self, calib):
         from sensor_inference.utils.object_post_process import PostProcesser
-        self.frames = []
         self.engine = build_engine(self.cfg.DATA_CONFIG, self.cfg.SCN_ONNX_FILE, self.cfg.RPN_TRT_FILE)
         self.post_processer = PostProcesser(model_cfg=self.cfg.MODEL,
                                             num_class=len(self.cfg.CLASS_NAMES),
@@ -53,25 +53,15 @@ class ObjectInfer(InferBase):
         if not data_dict:
             return None
 
-        # maintain the fix length list
-        self.frames = self.frames[:self.cfg.DATA_CONFIG.POINT_FRAME_NUM - 1]
-
-        # transform the pointcloud from t-1 to t
-        motion_t = data_dict['infos']['motion_t']
-        for i, frame in enumerate(self.frames):
-            frame_hom = np.hstack((frame[:, :3], np.ones((frame.shape[0], 1), dtype=np.float32)))
-            frame[:, 0:3] = np.dot(motion_t, frame_hom.T).T[:, 0:3]
-            frame[:, 4] = frame[:, 4] + 0.1
+        # relative motion
+        motion_t = np.ascontiguousarray(data_dict['infos']['motion_t'], dtype=np.float32)
 
         # concate the time dimension
         points = np.concatenate(list(data_dict['lidar_data'].values()), axis=0) if data_dict['infos']['lidar_valid'] else np.zeros((1, 4), dtype=np.float32)
         points = np.concatenate((points, np.zeros((points.shape[0], 1))), axis=1)
 
-        # insert to the first position
-        self.frames.insert(0, points)
-
         # cnn
-        cls_preds, box_preds, label_preds = self.engine(np.concatenate(self.frames, axis=0))
+        cls_preds, box_preds, label_preds = self.engine(points, motion_t, True)
 
         # postprocess
         pred_dicts = self.post_processer.forward(cls_preds, box_preds, label_preds)
