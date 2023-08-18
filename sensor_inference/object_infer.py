@@ -70,9 +70,8 @@ class ObjectInfer(InferBase):
         # insert to the first position
         self.frames.insert(0, points)
 
-        accum_points = np.concatenate(self.frames, axis=0)
         # cnn
-        cls_preds, box_preds, label_preds = self.engine(points[:, :4])
+        cls_preds, box_preds, label_preds = self.engine(np.concatenate(self.frames, axis=0))
 
         # postprocess
         pred_dicts = self.post_processer.forward(cls_preds, box_preds, label_preds)

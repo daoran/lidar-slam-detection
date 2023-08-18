@@ -28,7 +28,7 @@ void inference_init(std::string scn_file, std::string rpn_file,
   parameter.voxelization.max_points_per_voxel = max_points;
   parameter.voxelization.max_points = max_points_use;
   parameter.voxelization.max_voxels = max_voxels;
-  parameter.voxelization.num_feature = 4;
+  parameter.voxelization.num_feature = 5;
 
   s_lidar_engine = create_engine(parameter);
 }

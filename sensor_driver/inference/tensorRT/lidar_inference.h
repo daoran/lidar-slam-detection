@@ -46,6 +46,7 @@ struct LidarEngineParameter {
 
 class LidarInference {
   private:
+    LidarEngineParameter parameter_;
     std::shared_ptr<Voxelization> voxelizer_;
     std::shared_ptr<spconv::Engine> scn_engine_;
     std::shared_ptr<TensorRT::Engine> rpn_engine_;

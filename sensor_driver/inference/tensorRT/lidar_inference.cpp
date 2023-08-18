@@ -29,6 +29,7 @@
 
 LidarInference::LidarInference(LidarEngineParameter parameter)
 {
+    parameter_ = parameter;
     max_points = parameter.voxelization.max_points;
     voxelizer_ = create_voxelization(parameter.voxelization);
     scn_engine_ = spconv::load_engine_from_onnx(parameter.scn_file);
@@ -70,7 +71,7 @@ int LidarInference::forward(const float* points, int point_num)
 
     // spconv
     auto spatial_features = scn_engine_->forward(
-        {valid_num, 4}, spconv::DType::Float16, d_voxel_features,
+        {valid_num, parameter_.voxelization.num_feature}, spconv::DType::Float16, d_voxel_features,
         {valid_num, 4}, spconv::DType::Int32,   d_voxel_indices,
         1, sparse_shape, stream
     );
