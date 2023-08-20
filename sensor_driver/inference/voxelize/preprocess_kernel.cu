@@ -57,16 +57,18 @@ class PreprocessImplement : public Preprocess {
     cudaStream_t _stream = reinterpret_cast<cudaStream_t>(stream);
     checkRuntime(cudaMemcpyAsync(d_motion_, motion, 4 * 4 * sizeof(float), cudaMemcpyHostToDevice, _stream));
 
-    // pop out the last frame points
-    total_points_num_ = total_points_num_ - points_num_.back();
-    num_points = std::min(num_points, param_.max_points - total_points_num_);
-
-    // move all element to next position
-    for(size_t i = points_num_.size() - 1; i >= 1; i--) {
-      points_num_[i] = points_num_[i - 1];
-    }
-
     if (realtime) {
+      // pop out the last frame points
+      total_points_num_ = total_points_num_ - points_num_.back();
+      num_points = std::min(num_points, param_.max_points - total_points_num_);
+      num_points = std::max(num_points, 1);
+
+      // move all frames to next position
+      for(size_t i = points_num_.size() - 1; i >= 1; i--) {
+        points_num_[i] = points_num_[i - 1];
+      }
+
+      // determine the output buffer
       float* src_buffer;
       float* dst_buffer;
       if (points_device_idx_ == 0) {
@@ -79,11 +81,11 @@ class PreprocessImplement : public Preprocess {
         points_device_idx_ = 0;
       }
 
+      // transform the points in the sliding window
       if (total_points_num_ > 0) {
         cuda_linear_launch(transform_kernel, _stream, total_points_num_, num_points * param_.num_feature,
                            src_buffer, dst_buffer, param_, d_motion_);
       }
-
     } else {
       points_num_.resize(param_.max_frame_num, 0);
       total_points_num_ = 0;
