@@ -27,7 +27,8 @@ LSD currently supports many features:
 | Performance (Waymo Open Dataset) | Vec_L1 | Vec_L2 | Ped_L1 | Ped_L2 | Cyc_L1 | Cyc_L2 |
 |--------------------------|:----------:|:-------:|:-------:|:-------:|:-------:|:-------:|
 | PointPillar              | 73.71/73.12|65.71/65.17|71.70/60.90|63.52/53.78|65.30/63.77 |63.12/61.64|
-| **CenterPoint-VoxelNet** | **74.75/74.24**|**66.09/65.63**|**77.66/71.54**|**68.57/63.02**|**72.03/70.93** |**69.63/68.57**|
+| CenterPoint-VoxelNet (1 frame)     | 74.75/74.24|66.09/65.63|77.66/71.54|68.57/63.02|72.03/70.93 |69.63/68.57|
+| **CenterPoint-VoxelNet** (4 frame) | **77.55/77.03**|**69.65/69.17**|**80.72/77.80**|**72.91/70.15**|**72.63/71.72** |**70.55/69.67**|
 
 **Note: the CenterPoint-VoxelNet is built on [libspconv](https://github.com/NVIDIA-AI-IOT/Lidar_AI_Solution) and the GPU with SM80+ is required.**
 
