@@ -1,3 +1,4 @@
+import os
 import copy
 from sensor_inference.infer_base import InferBase
 from sensor_inference.utils.config import cfg, cfg_from_yaml_file
@@ -18,6 +19,7 @@ class TrafficLightInfer(InferBase):
         super().__init__('TrafficLight', engine_start, cfg_file, logger, max_size)
 
     def initialize(self):
+        self.cfg_file = self.cfg_file if os.path.exists(self.cfg_file) else 'sensor_inference/cfgs/detection_trafficlight.yaml'
         self.cfg = copy.deepcopy(parse_config(self.cfg_file))
         self.create_queue()
 

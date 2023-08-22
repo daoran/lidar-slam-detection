@@ -1,3 +1,4 @@
+import os
 import copy
 import numpy as np
 from sensor_inference.infer_base import InferBase
@@ -30,6 +31,7 @@ class ObjectInfer(InferBase):
         super().__init__('Object', engine_start, cfg_file, logger, max_size)
 
     def initialize(self):
+        self.cfg_file = self.cfg_file if os.path.exists(self.cfg_file) else 'sensor_inference/cfgs/detection_object.yaml'
         self.cfg = copy.deepcopy(parse_config(self.cfg_file))
         self.create_queue()
 
