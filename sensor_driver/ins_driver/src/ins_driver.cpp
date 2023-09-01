@@ -58,6 +58,9 @@ void InsDriver::startRun(int portIn, std::string device) {
     mDevice = device;
     mThreadStopFlag = false;
 
+    // Unix socket relay
+    mUnixClient.reset(new UnixSocketClient("/tmp/imu_data.sock"));
+
     // UDP
     if (mStartTransfer && mDestination.compare("127.0.0.1") == 0) {
         LOG_WARN("INS relay destination is {}, UDP receiver won't be started", mDestination);
@@ -83,9 +86,6 @@ void InsDriver::startRun(int portIn, std::string device) {
     mCore = create_core();
     mCore->subscribe("slam.odometry", &InsDriver::onPoseMessage, this);
     mCore->start();
-
-    // Unix socket relay
-    mUnixClient.reset(new UnixSocketClient("/tmp/imu_data.sock"));
 }
 
 void InsDriver::stopRun() {
@@ -411,15 +411,14 @@ void InsDriver::run_com() {
 
             uint64_t hostTime = getCurrentTime();
             uint64_t gpsTime = gps2Utc(ins.gps_week, ins.gps_time);
-            double diffMSec = fabs(gpsTime / 1000.0 - hostTime / 1000.0);
+            double diffMSec = gpsTime / 1000.0 - hostTime / 1000.0;
             if (diffMSec > 60000) {
-                ins.gps_timestamp = gpsTime;
                 setSystemTime(gpsTime);
                 hostTime = gpsTime;
                 LOG_WARN("COM: gps/host time diff {} ms, adjust system clock", diffMSec);
-            } else {
-                ins.gps_timestamp = hostTime;
             }
+
+            ins.gps_timestamp = hostTime;
             setData(ins, ins.gps_timestamp);
         }
 

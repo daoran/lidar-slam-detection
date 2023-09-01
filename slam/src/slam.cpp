@@ -429,7 +429,7 @@ void SLAM::runLocalizationThread() {
       } else {
         rtk.timestamp = getCurrentTime();
         pose_valid = mSlam->getTimedPose(rtk.timestamp, pose);
-        LOG_WARN("localization has no imu to predict, only based on motion model");
+        LOG_DEBUG("localization has no imu to predict, only based on motion model");
       }
 
       if (!pose_valid && !isImuOnline) {

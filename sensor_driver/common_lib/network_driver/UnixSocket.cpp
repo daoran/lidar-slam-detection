@@ -13,7 +13,7 @@ UnixSocketClient::UnixSocketClient(std::string path) {
 UnixSocketClient::~UnixSocketClient() {
     close(sock);
 }
-int UnixSocketClient::Sendto(std::string buf, int length) {
+int UnixSocketClient::Sendto(const std::string &buf, int length) {
     return sendto(sock, buf.c_str(), length, 0, (sockaddr*)&addr, sizeof(addr));
 }
 

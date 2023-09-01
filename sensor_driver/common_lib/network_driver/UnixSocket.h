@@ -11,7 +11,7 @@ class UnixSocketClient {
 
   UnixSocketClient(std::string path);
   ~UnixSocketClient();
-  int Sendto(std::string buf, int length);
+  int Sendto(const std::string &buf, int length);
 
  private:
   int sock;
