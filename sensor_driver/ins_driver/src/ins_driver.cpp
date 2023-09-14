@@ -303,6 +303,19 @@ bool InsDriver::trigger(uint64_t timestamp, bool &motion_valid, std::vector<doub
     ins = mQueuedData.back();
     std::swap(imu, mQueuedData);
 
+    // normal GPS is 1Hz data rate, need to force align to the main sensor (LiDAR)
+    if (mUseSeperateGPS && ins.Status == 0) {
+        for (auto &data : imu) {
+            if (data.Status != 0) {
+                ins.latitude  = data.latitude;
+                ins.longitude = data.longitude;
+                ins.altitude  = data.altitude;
+                ins.Status    = data.Status;
+                break;
+            }
+        }
+    }
+
     // estimate the realtive motion
     if (!mFirstTrigger) {
         motion_valid = getMotion(motionT, motionR, mLastTriggerTime, timestamp);
