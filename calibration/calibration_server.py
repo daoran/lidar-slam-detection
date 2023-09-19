@@ -89,12 +89,11 @@ class CalibrationServer:
         self.perception.set_config(config)
         return result
 
-    def calibrate_heading(self, source, target, anchor, key):
+    def calibrate_heading(self, source, target, key):
         result, config = self.perception.call('calibration.calibrate_heading',
                                               dict(config=self.perception.get_config(),
                                                    source=source,
                                                    target=target,
-                                                   anchor=anchor,
                                                    key=key)
                                              )
         self.perception.set_config(config)

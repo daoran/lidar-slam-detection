@@ -9,8 +9,6 @@ class UdpSink(SinkTemplate):
         dest_ip = cfg.output.protocol.UDP.destination
         dest_port = cfg.output.protocol.UDP.port
         self.udp_device = build_udp('Linux', dest_ip, dest_port, logger)
-        self.is_global = cfg.output.protocol.UDP.coordinate == "global"
-        self.anchor = cfg.output.protocol.UDP.anchor
 
         if cfg.output.protocol.UDP.use:
             self.start()
@@ -42,7 +40,5 @@ class UdpSink(SinkTemplate):
         return data_dict
 
     def sink(self, data_dict):
-        if self.is_global:
-            data_dict['anchor'] = self.anchor
         data = serialize_to_string(data_dict)
         self.udp_device.send(data)

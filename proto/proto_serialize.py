@@ -15,11 +15,6 @@ def serialize_to_string(result_dict, display_on_image=False, use_raw_image=False
     # 3D object
     if 'pred_boxes' in result_dict and 'pred_attr' in result_dict and 'pred_traj' in result_dict:
         pred_boxes, pred_attr, pred_traj = result_dict["pred_boxes"], result_dict["pred_attr"], result_dict["pred_traj"]
-        if 'anchor' in result_dict:
-            anchor = result_dict['anchor']
-            for i, box in enumerate(pred_boxes):
-                pred_boxes[i, :2] = cpp_utils.get_projection_backward(anchor[0], anchor[1], box[0], box[1])
-
         for box, attr, traj in zip(pred_boxes, pred_attr, pred_traj):
             pred_object = det.object.add()
             pred_object.id = int(attr[4])

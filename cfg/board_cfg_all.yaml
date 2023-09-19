@@ -232,8 +232,6 @@ output:
             use: true
             destination: 192.168.1.101
             port: 9000
-            coordinate: "local" # global
-            anchor: [0, 0]
         CAN:
             use: false
             device: "can0"

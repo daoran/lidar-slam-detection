@@ -36,7 +36,7 @@ def calibrate_ground(config, points, contour, key):
     ]
     return dT.flatten().tolist(), config
 
-def calibrate_heading(config, source, target, anchor, key):
+def calibrate_heading(config, source, target, key):
     from calibration.lidar_calibration import align_points
     T = get_transform_from_cfg(*config['lidar'][int(key)]['extrinsic_parameters'])
     dT = align_points(source, target)
@@ -44,7 +44,6 @@ def calibrate_heading(config, source, target, anchor, key):
     config['lidar'][int(key)]['extrinsic_parameters'] = [
         float(x) for x in get_cfg_from_transform(T)
     ]
-    config['output']['protocol']['UDP']['anchor'] = anchor
     return dT.flatten().tolist(), config
 
 def get_camera_index(config, cameraName):
