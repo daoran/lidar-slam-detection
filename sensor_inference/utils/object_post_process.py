@@ -24,13 +24,11 @@ class PostProcesser():
         )
         final_labels = final_labels.reshape(final_labels.shape[0], 1)
         final_scores = final_scores.reshape(final_scores.shape[0], 1)
-        final_sensor = np.zeros((final_scores.shape[0], 1), dtype=np.int32)
 
         result_dict = {
-            'pred_boxes': final_boxes,
+            'pred_boxes' : final_boxes,
             'pred_scores': final_scores,
             'pred_labels': final_labels,
-            'pred_sensor': final_sensor,
         }
 
         return result_dict

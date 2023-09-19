@@ -10,7 +10,6 @@ def seperate_predict(pred_dicts, key):
     score = np.expand_dims(pred_dicts['pred_attr'][cls_mask, 5], axis=1)
     cls_dict['dets'] = np.concatenate((pred_dicts['pred_boxes'][cls_mask], score), axis = 1).astype(np.float32)
     cls_dict['label'] = np.expand_dims(pred_dicts['pred_attr'][cls_mask, 6], axis=1)
-    cls_dict['sensor'] = np.expand_dims(pred_dicts['pred_attr'][cls_mask, 10], axis=1)
     # remain the other class box
     non_cls_mask = ~cls_mask
     pred_dicts['pred_boxes'] = pred_dicts['pred_boxes'][non_cls_mask]
@@ -27,7 +26,6 @@ def concat_trackers(track_dict, trackers, traj):
 def prepare_tracking(pred_dicts, cls_dict):
     pred_labels = pred_dicts.pop('pred_labels')
     pred_scores = pred_dicts.pop('pred_scores')
-    pred_sensor = pred_dicts.pop('pred_sensor')
     num_obstacle = pred_labels.shape[0]
 
     pred_ids = np.zeros((num_obstacle, 1), dtype = np.int32)
@@ -35,8 +33,8 @@ def prepare_tracking(pred_dicts, cls_dict):
     pred_valid = np.ones((num_obstacle, 1), dtype = np.bool)
     pred_status = np.zeros((num_obstacle, 1), dtype = np.int32)
     pred_state = np.zeros((num_obstacle, 4), dtype = np.float32)
-    # velo_x, velo_y, heading_rate, accel_x, id, score, label, age, valid, status, sensor
-    pred_dicts['pred_attr'] = np.concatenate([pred_state, pred_ids, pred_scores, pred_labels, pred_age, pred_valid, pred_status, pred_sensor], axis = 1)
+    # velo_x, velo_y, heading_rate, accel_x, id, score, label, age, valid, status
+    pred_dicts['pred_attr'] = np.concatenate([pred_state, pred_ids, pred_scores, pred_labels, pred_age, pred_valid, pred_status], axis = 1)
     pred_dicts['pred_traj'] = np.zeros((num_obstacle, 20, 7), dtype = np.float32)
     for (key, cls_name) in cls_dict.items():
         if cls_name == 'Vehicle':

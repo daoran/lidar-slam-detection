@@ -15,7 +15,7 @@ class KalmanBoxTracker():
     This class represents the internel state of individual tracked objects observed as bbox.
     """
     idTable = np.arange(255).tolist()
-    def __init__(self, bbox3D, label, sensor, movable):
+    def __init__(self, bbox3D, label, movable):
         """
         Initialises a tracker using initial bounding box.
         """
@@ -35,7 +35,6 @@ class KalmanBoxTracker():
         self.status = Status.Undefined
         self.movable = movable
         self.label = label      # object label
-        self.sensor = sensor
         self.set_detection(False)
         self.update_status()
 
@@ -51,7 +50,7 @@ class KalmanBoxTracker():
         else:
             self.status = Status.Static
 
-    def update(self, bbox3D, label, sensor, ins_valid):
+    def update(self, bbox3D, label, ins_valid):
         """
         Updates the state vector with observed bbox.
         """
@@ -68,7 +67,6 @@ class KalmanBoxTracker():
             self.hit_streak += 1
 
         self.label = label
-        self.sensor = sensor
 
         self.update_status()
 
@@ -108,7 +106,7 @@ class KalmanBoxTracker():
         return trajectory
 
 class KalmanStaticBoxTracker():
-    def __init__(self, bbox3D, label, sensor, movable):
+    def __init__(self, bbox3D, label, movable):
         self.id = KalmanBoxTracker.idTable[0] # New obstacles are given the last used free ID.
         KalmanBoxTracker.idTable.remove(self.id)
         # x,y,z,l,w,h,heading,score
@@ -122,11 +120,10 @@ class KalmanStaticBoxTracker():
         self.age = 1            # The age of the obstacle (in frames)
         self.valid = True       # True: New valid (detected this frame), False: Older valid
         self.label = label      # object label
-        self.sensor = sensor
         self.set_detection(False)
         self.status = Status.Static
 
-    def update(self, bbox3D, label, sensor, ins_valid):
+    def update(self, bbox3D, label, ins_valid):
         """
         Updates the state vector with observed bbox.
         """
@@ -138,7 +135,6 @@ class KalmanStaticBoxTracker():
         self.hits += 1
         self.hit_streak += 1          # number of continuing hit
         self.label = label
-        self.sensor = sensor
 
     def set_detection(self, isGood):
         self.threshold_gate = -0.05 if isGood else 0.05

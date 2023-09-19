@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto2',
   serialized_options=None,
-  serialized_pb=_b('\n\x0f\x64\x65tection.proto\"9\n\x07Point3D\x12\x0e\n\x01x\x18\x01 \x01(\x01:\x03nan\x12\x0e\n\x01y\x18\x02 \x01(\x01:\x03nan\x12\x0e\n\x01z\x18\x03 \x01(\x01:\x03nan\"a\n\x05\x42ox3D\x12\x18\n\x06\x63\x65nter\x18\x01 \x01(\x0b\x32\x08.Point3D\x12\x0e\n\x06length\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x02\x12\x0e\n\x06height\x18\x04 \x01(\x02\x12\x0f\n\x07heading\x18\x05 \x01(\x02\"\x82\x01\n\nTrajectory\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\x12\n\nvelocity_x\x18\x05 \x01(\x02\x12\x12\n\nvelocity_y\x18\x06 \x01(\x02\x12\x1a\n\x12relative_timestamp\x18\x07 \x01(\x04\"U\n\x06Header\x12\x0f\n\x07version\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x1a\n\x12relative_timestamp\x18\x03 \x01(\x04\x12\x0b\n\x03\x66ps\x18\x04 \x01(\x02\"\xab\x01\n\x04Pose\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\t\n\x01z\x18\x03 \x01(\x02\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05pitch\x18\x05 \x01(\x02\x12\x0c\n\x04roll\x18\x06 \x01(\x02\x12\x10\n\x08latitude\x18\x07 \x01(\x01\x12\x11\n\tlongitude\x18\x08 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\t \x01(\x01\x12\x0e\n\x06status\x18\n \x01(\x05\x12\r\n\x05state\x18\x0b \x01(\t\"\x9a\x04\n\x06Object\x12\n\n\x02id\x18\x01 \x01(\r\x12\x1a\n\x04type\x18\x02 \x01(\x0e\x32\x0c.Object.Type\x12\x12\n\nconfidence\x18\x03 \x01(\x02\x12\x13\n\x03\x62ox\x18\x04 \x01(\x0b\x32\x06.Box3D\x12\x12\n\nvelocity_x\x18\x05 \x01(\x02\x12\x12\n\nvelocity_y\x18\x06 \x01(\x02\x12\x12\n\nangle_rate\x18\x07 \x01(\x02\x12\x0f\n\x07\x61\x63\x63\x65l_x\x18\x08 \x01(\x02\x12\r\n\x05valid\x18\t \x01(\x08\x12\x1e\n\x06status\x18\n \x01(\x0e\x32\x0e.Object.Status\x12\x0b\n\x03\x61ge\x18\x0b \x01(\r\x12\x1f\n\ntrajectory\x18\x0c \x03(\x0b\x32\x0b.Trajectory\x12\"\n\x06sensor\x18\r \x01(\x0e\x32\x12.Object.SensorType\"G\n\x04Type\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07VEHICLE\x10\x01\x12\x0e\n\nPEDESTRIAN\x10\x02\x12\x0b\n\x07\x43YCLIST\x10\x03\x12\x08\n\x04\x43ONE\x10\x04\"<\n\x06Status\x12\r\n\tUNDEFINED\x10\x00\x12\n\n\x06STATIC\x10\x01\x12\x0b\n\x07STOPPED\x10\x02\x12\n\n\x06MOVING\x10\x03\"j\n\nSensorType\x12\t\n\x05LIDAR\x10\x00\x12\n\n\x06\x43\x41MERA\x10\x01\x12\t\n\x05RADAR\x10\x02\x12\x10\n\x0cLIDAR_CAMERA\x10\x03\x12\x10\n\x0cRADAR_CAMERA\x10\x04\x12\x16\n\x12LIDAR_RADAR_CAMERA\x10\x05\"\x9b\x01\n\rFreespaceInfo\x12\r\n\x05x_min\x18\x01 \x01(\x02\x12\r\n\x05x_max\x18\x02 \x01(\x02\x12\r\n\x05y_min\x18\x03 \x01(\x02\x12\r\n\x05y_max\x18\x04 \x01(\x02\x12\r\n\x05z_min\x18\x05 \x01(\x02\x12\r\n\x05z_max\x18\x06 \x01(\x02\x12\x12\n\nresolution\x18\x07 \x01(\x02\x12\r\n\x05x_num\x18\x08 \x01(\x03\x12\r\n\x05y_num\x18\t \x01(\x03\"8\n\tFreespace\x12\x1c\n\x04info\x18\x01 \x01(\x0b\x32\x0e.FreespaceInfo\x12\r\n\x05\x63\x65lls\x18\x02 \x01(\x0c\"1\n\x0b\x43\x61meraImage\x12\x13\n\x0b\x63\x61mera_name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\":\n\x05Radar\x12\x12\n\nradar_name\x18\x01 \x01(\t\x12\x1d\n\x0cradar_object\x18\x02 \x03(\x0b\x32\x07.Object\"\xa9\x01\n\tDetection\x12\x17\n\x06header\x18\x01 \x01(\x0b\x32\x07.Header\x12\x17\n\x06object\x18\x02 \x03(\x0b\x32\x07.Object\x12\x11\n\tfreespace\x18\x03 \x01(\x0c\x12\x0e\n\x06points\x18\x04 \x01(\x0c\x12\x1b\n\x05image\x18\x05 \x03(\x0b\x32\x0c.CameraImage\x12\x15\n\x05radar\x18\x06 \x03(\x0b\x32\x06.Radar\x12\x13\n\x04pose\x18\x07 \x01(\x0b\x32\x05.Pose')
+  serialized_pb=_b('\n\x0f\x64\x65tection.proto\"9\n\x07Point3D\x12\x0e\n\x01x\x18\x01 \x01(\x01:\x03nan\x12\x0e\n\x01y\x18\x02 \x01(\x01:\x03nan\x12\x0e\n\x01z\x18\x03 \x01(\x01:\x03nan\"a\n\x05\x42ox3D\x12\x18\n\x06\x63\x65nter\x18\x01 \x01(\x0b\x32\x08.Point3D\x12\x0e\n\x06length\x18\x02 \x01(\x02\x12\r\n\x05width\x18\x03 \x01(\x02\x12\x0e\n\x06height\x18\x04 \x01(\x02\x12\x0f\n\x07heading\x18\x05 \x01(\x02\"\x82\x01\n\nTrajectory\x12\t\n\x01x\x18\x01 \x01(\x01\x12\t\n\x01y\x18\x02 \x01(\x01\x12\t\n\x01z\x18\x03 \x01(\x01\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\x12\n\nvelocity_x\x18\x05 \x01(\x02\x12\x12\n\nvelocity_y\x18\x06 \x01(\x02\x12\x1a\n\x12relative_timestamp\x18\x07 \x01(\x04\"U\n\x06Header\x12\x0f\n\x07version\x18\x01 \x01(\x0c\x12\x11\n\ttimestamp\x18\x02 \x01(\x04\x12\x1a\n\x12relative_timestamp\x18\x03 \x01(\x04\x12\x0b\n\x03\x66ps\x18\x04 \x01(\x02\"\xab\x01\n\x04Pose\x12\t\n\x01x\x18\x01 \x01(\x02\x12\t\n\x01y\x18\x02 \x01(\x02\x12\t\n\x01z\x18\x03 \x01(\x02\x12\x0f\n\x07heading\x18\x04 \x01(\x02\x12\r\n\x05pitch\x18\x05 \x01(\x02\x12\x0c\n\x04roll\x18\x06 \x01(\x02\x12\x10\n\x08latitude\x18\x07 \x01(\x01\x12\x11\n\tlongitude\x18\x08 \x01(\x01\x12\x10\n\x08\x61ltitude\x18\t \x01(\x01\x12\x0e\n\x06status\x18\n \x01(\x05\x12\r\n\x05state\x18\x0b \x01(\t\"\x8a\x03\n\x06Object\x12\n\n\x02id\x18\x01 \x01(\r\x12\x1a\n\x04type\x18\x02 \x01(\x0e\x32\x0c.Object.Type\x12\x12\n\nconfidence\x18\x03 \x01(\x02\x12\x13\n\x03\x62ox\x18\x04 \x01(\x0b\x32\x06.Box3D\x12\x12\n\nvelocity_x\x18\x05 \x01(\x02\x12\x12\n\nvelocity_y\x18\x06 \x01(\x02\x12\x12\n\nangle_rate\x18\x07 \x01(\x02\x12\x0f\n\x07\x61\x63\x63\x65l_x\x18\x08 \x01(\x02\x12\r\n\x05valid\x18\t \x01(\x08\x12\x1e\n\x06status\x18\n \x01(\x0e\x32\x0e.Object.Status\x12\x0b\n\x03\x61ge\x18\x0b \x01(\r\x12\x1f\n\ntrajectory\x18\x0c \x03(\x0b\x32\x0b.Trajectory\"G\n\x04Type\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07VEHICLE\x10\x01\x12\x0e\n\nPEDESTRIAN\x10\x02\x12\x0b\n\x07\x43YCLIST\x10\x03\x12\x08\n\x04\x43ONE\x10\x04\"<\n\x06Status\x12\r\n\tUNDEFINED\x10\x00\x12\n\n\x06STATIC\x10\x01\x12\x0b\n\x07STOPPED\x10\x02\x12\n\n\x06MOVING\x10\x03\"\x9b\x01\n\rFreespaceInfo\x12\r\n\x05x_min\x18\x01 \x01(\x02\x12\r\n\x05x_max\x18\x02 \x01(\x02\x12\r\n\x05y_min\x18\x03 \x01(\x02\x12\r\n\x05y_max\x18\x04 \x01(\x02\x12\r\n\x05z_min\x18\x05 \x01(\x02\x12\r\n\x05z_max\x18\x06 \x01(\x02\x12\x12\n\nresolution\x18\x07 \x01(\x02\x12\r\n\x05x_num\x18\x08 \x01(\x03\x12\r\n\x05y_num\x18\t \x01(\x03\"8\n\tFreespace\x12\x1c\n\x04info\x18\x01 \x01(\x0b\x32\x0e.FreespaceInfo\x12\r\n\x05\x63\x65lls\x18\x02 \x01(\x0c\"1\n\x0b\x43\x61meraImage\x12\x13\n\x0b\x63\x61mera_name\x18\x01 \x01(\t\x12\r\n\x05image\x18\x02 \x01(\x0c\":\n\x05Radar\x12\x12\n\nradar_name\x18\x01 \x01(\t\x12\x1d\n\x0cradar_object\x18\x02 \x03(\x0b\x32\x07.Object\"\xa9\x01\n\tDetection\x12\x17\n\x06header\x18\x01 \x01(\x0b\x32\x07.Header\x12\x17\n\x06object\x18\x02 \x03(\x0b\x32\x07.Object\x12\x11\n\tfreespace\x18\x03 \x01(\x0c\x12\x0e\n\x06points\x18\x04 \x01(\x0c\x12\x1b\n\x05image\x18\x05 \x03(\x0b\x32\x0c.CameraImage\x12\x15\n\x05radar\x18\x06 \x03(\x0b\x32\x06.Radar\x12\x13\n\x04pose\x18\x07 \x01(\x0b\x32\x05.Pose')
 )
 
 
@@ -54,8 +54,8 @@ _OBJECT_TYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=869,
-  serialized_end=940,
+  serialized_start=833,
+  serialized_end=904,
 )
 _sym_db.RegisterEnumDescriptor(_OBJECT_TYPE)
 
@@ -84,48 +84,10 @@ _OBJECT_STATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=942,
-  serialized_end=1002,
+  serialized_start=906,
+  serialized_end=966,
 )
 _sym_db.RegisterEnumDescriptor(_OBJECT_STATUS)
-
-_OBJECT_SENSORTYPE = _descriptor.EnumDescriptor(
-  name='SensorType',
-  full_name='Object.SensorType',
-  filename=None,
-  file=DESCRIPTOR,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='LIDAR', index=0, number=0,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='CAMERA', index=1, number=1,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='RADAR', index=2, number=2,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='LIDAR_CAMERA', index=3, number=3,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='RADAR_CAMERA', index=4, number=4,
-      serialized_options=None,
-      type=None),
-    _descriptor.EnumValueDescriptor(
-      name='LIDAR_RADAR_CAMERA', index=5, number=5,
-      serialized_options=None,
-      type=None),
-  ],
-  containing_type=None,
-  serialized_options=None,
-  serialized_start=1004,
-  serialized_end=1110,
-)
-_sym_db.RegisterEnumDescriptor(_OBJECT_SENSORTYPE)
 
 
 _POINT3D = _descriptor.Descriptor(
@@ -549,13 +511,6 @@ _OBJECT = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='sensor', full_name='Object.sensor', index=12,
-      number=13, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -563,7 +518,6 @@ _OBJECT = _descriptor.Descriptor(
   enum_types=[
     _OBJECT_TYPE,
     _OBJECT_STATUS,
-    _OBJECT_SENSORTYPE,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -572,7 +526,7 @@ _OBJECT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=572,
-  serialized_end=1110,
+  serialized_end=966,
 )
 
 
@@ -658,8 +612,8 @@ _FREESPACEINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1113,
-  serialized_end=1268,
+  serialized_start=969,
+  serialized_end=1124,
 )
 
 
@@ -696,8 +650,8 @@ _FREESPACE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1270,
-  serialized_end=1326,
+  serialized_start=1126,
+  serialized_end=1182,
 )
 
 
@@ -734,8 +688,8 @@ _CAMERAIMAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1328,
-  serialized_end=1377,
+  serialized_start=1184,
+  serialized_end=1233,
 )
 
 
@@ -772,8 +726,8 @@ _RADAR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1379,
-  serialized_end=1437,
+  serialized_start=1235,
+  serialized_end=1293,
 )
 
 
@@ -845,8 +799,8 @@ _DETECTION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1440,
-  serialized_end=1609,
+  serialized_start=1296,
+  serialized_end=1465,
 )
 
 _BOX3D.fields_by_name['center'].message_type = _POINT3D
@@ -854,10 +808,8 @@ _OBJECT.fields_by_name['type'].enum_type = _OBJECT_TYPE
 _OBJECT.fields_by_name['box'].message_type = _BOX3D
 _OBJECT.fields_by_name['status'].enum_type = _OBJECT_STATUS
 _OBJECT.fields_by_name['trajectory'].message_type = _TRAJECTORY
-_OBJECT.fields_by_name['sensor'].enum_type = _OBJECT_SENSORTYPE
 _OBJECT_TYPE.containing_type = _OBJECT
 _OBJECT_STATUS.containing_type = _OBJECT
-_OBJECT_SENSORTYPE.containing_type = _OBJECT
 _FREESPACE.fields_by_name['info'].message_type = _FREESPACEINFO
 _RADAR.fields_by_name['radar_object'].message_type = _OBJECT
 _DETECTION.fields_by_name['header'].message_type = _HEADER

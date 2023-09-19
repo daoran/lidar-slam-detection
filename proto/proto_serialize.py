@@ -34,7 +34,6 @@ def serialize_to_string(result_dict, display_on_image=False, use_raw_image=False
             pred_object.valid = bool(attr[8])
             pred_object.status = int(attr[9])
             pred_object.age = int(attr[7])
-            pred_object.sensor = int(attr[10]) if len(attr) >= 11 else 0
             if traj[0][-1] <= 0: # no prediction trajectory
                 continue
             for sample in traj:
@@ -107,7 +106,6 @@ def serialize_to_string(result_dict, display_on_image=False, use_raw_image=False
                 radar_object.valid = True
                 radar_object.status = 0
                 radar_object.age = 1
-                radar_object.sensor = 2
 
     # pose
     if 'pose' in result_dict and result_dict['slam_valid']:

@@ -41,7 +41,7 @@ class AB3DMOT(object):
         self.score_th = score_th
 
     def update(self, dets_all, motion_t, motion_heading, ins_valid, timestep):
-        dets, label, sensor = dets_all['dets'], dets_all['label'], dets_all['sensor']
+        dets, label = dets_all['dets'], dets_all['label']
 
         trks = np.zeros((len(self.trackers), 7), dtype=np.float32)         # N x 7 , # get predicted locations from existing trackers.
         for t, trk in enumerate(trks):
@@ -54,14 +54,14 @@ class AB3DMOT(object):
         for t, trk in enumerate(self.trackers):
             if t not in unmatched_trks:
                 d = matched[np.where(matched[:, 1] == t)[0], 0]     # a list of index
-                trk.update(dets[d, :][0], label[d, :][0], sensor[d, :][0], ins_valid)
+                trk.update(dets[d, :][0], label[d, :][0], ins_valid)
 
         # create and initialise new trackers for unmatched detections (max 256 objects)
         if len(KalmanBoxTracker.idTable) >= len(unmatched_dets):
             if self.movable:
-                new_trts = [KalmanBoxTracker(dets[i, :], label[i, :], sensor[i, :], self.movable) for i in unmatched_dets]
+                new_trts = [KalmanBoxTracker(dets[i, :], label[i, :], self.movable) for i in unmatched_dets]
             else:
-                new_trts = [KalmanStaticBoxTracker(dets[i, :], label[i, :], sensor[i, :], self.movable) for i in unmatched_dets]
+                new_trts = [KalmanStaticBoxTracker(dets[i, :], label[i, :], self.movable) for i in unmatched_dets]
             self.trackers = np.concatenate((self.trackers, new_trts), axis=0)
 
         trks_valid_mask = np.ones(len(self.trackers), dtype=np.bool)
@@ -72,7 +72,7 @@ class AB3DMOT(object):
 
             if ((trk.hits >= self.min_hits) and (trk.hit_streak >= 2) and (trk.score > (self.score_th + trk.threshold_gate))):
                 trk.set_detection(True)
-                ret.append(np.concatenate((d, [trk.id, trk.score], trk.label, [trk.age, trk.valid, trk.status.value], trk.sensor)).reshape(1, -1)) # +1 as MOT benchmark requires positive
+                ret.append(np.concatenate((d, [trk.id, trk.score], trk.label, [trk.age, trk.valid, trk.status.value])).reshape(1, -1)) # +1 as MOT benchmark requires positive
                 trajectorys.append(trajectory)
             else:
                 trk.set_detection(False)
@@ -83,7 +83,7 @@ class AB3DMOT(object):
                 trks_valid_mask[t] = False
         self.trackers = self.trackers[trks_valid_mask]
         if (len(ret) > 0): return np.concatenate(ret), np.concatenate(trajectorys) 			# x,y,z,w,h,l,theta,vx,vy,heading_rate,ax ID confidence label, age, valid, status
-        return np.empty((0, 18)), np.empty((0, 20, 7))
+        return np.empty((0, 17)), np.empty((0, 20, 7))
 
 
 class PassThrough(object):
@@ -91,14 +91,14 @@ class PassThrough(object):
         pass
 
     def update(self, dets_all, motion_t, motion_heading, ins_valid, timestep):
-        dets, label, sensor = dets_all['dets'], dets_all['label'], dets_all['sensor']
+        dets, label = dets_all['dets'], dets_all['label']
 
         ret, trajectorys = [], []
         for t, det in enumerate(dets):
             trajectory = np.zeros([1, 20, 7], dtype=np.float32)
 
-            ret.append(np.concatenate((det[:7], [0, 0, 0, 0, 0, det[7]], label[t], [0, False, 0], sensor[t])).reshape(1, -1))
+            ret.append(np.concatenate((det[:7], [0, 0, 0, 0, 0, det[7]], label[t], [0, False, 0])).reshape(1, -1))
             trajectorys.append(trajectory)
 
         if (len(ret) > 0): return np.concatenate(ret), np.concatenate(trajectorys) 			# x,y,z,w,h,l,theta,vx,vy,heading_rate,ax ID confidence label, age, valid, status
-        return np.empty((0, 18)), np.empty((0, 20, 7))
+        return np.empty((0, 17)), np.empty((0, 20, 7))
