@@ -32,7 +32,7 @@ export const DEFAULT_CONFIG = {
   freespace: { visible: false },
   object: {
     visible: true,
-    color: "objectType" as "objectType" | "sensorType",
+    color: "objectType" as "objectType",
     showOnImage: false,
     showInfo: false,
     showTrajectory: false,

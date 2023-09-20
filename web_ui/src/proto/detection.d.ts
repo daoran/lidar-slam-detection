@@ -626,9 +626,6 @@ export interface IObject {
 
   /** Object trajectory */
   trajectory?: ITrajectory[] | null;
-
-  /** Object sensor */
-  sensor: Object.SensorType;
 }
 
 /** Represents an Object. */
@@ -674,9 +671,6 @@ export class Object implements IObject {
 
   /** Object trajectory. */
   public trajectory: ITrajectory[];
-
-  /** Object sensor. */
-  public sensor: Object.SensorType;
 
   /**
    * Creates a new Object instance using the specified properties.
@@ -765,16 +759,6 @@ export namespace Object {
     STATIC = 1,
     STOPPED = 2,
     MOVING = 3,
-  }
-
-  /** SensorType enum. */
-  enum SensorType {
-    LIDAR = 0,
-    CAMERA = 1,
-    RADAR = 2,
-    LIDAR_CAMERA = 3,
-    RADAR_CAMERA = 4,
-    LIDAR_RADAR_CAMERA = 5,
   }
 }
 

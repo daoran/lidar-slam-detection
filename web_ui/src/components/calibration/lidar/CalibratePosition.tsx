@@ -40,7 +40,6 @@ function CalibratePosition({ points, lidarIndex, coordinate, setCalibEnable }: P
 
       let pointSource: [number, number][] = pointsLidar.map((pt) => [pt.x, pt.y]);
       let pointTarget = [...pointsWorld];
-      let anchor: [number, number] = [0, 0];
       if (coordinate == "Global") {
         for (let i = 1; i < pointTarget.length; i++) {
           pointTarget[i] = await getProjectionForward(
@@ -50,7 +49,6 @@ function CalibratePosition({ points, lidarIndex, coordinate, setCalibEnable }: P
             pointTarget[i][1]
           );
         }
-        anchor = pointTarget[0];
         pointSource = pointSource.slice(1);
         pointTarget = pointTarget.slice(1);
       }
@@ -58,7 +56,6 @@ function CalibratePosition({ points, lidarIndex, coordinate, setCalibEnable }: P
       return await calibrateHeading({
         source: pointSource,
         target: pointTarget,
-        anchor: anchor,
         key: lidarIndex,
       });
     },

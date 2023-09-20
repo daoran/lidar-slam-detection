@@ -104,9 +104,6 @@ export default function ObjectDetected({
           if (colorType == "objectType") {
             box.material = meshMatrials[classId];
             edge.material = lineMatrials[classId];
-          } else if (colorType == "sensorType") {
-            box.material = sensorMeshMatrials[object.sensor];
-            edge.material = sensorLineMatrials[object.sensor];
           }
           box.visible = planeVisible;
 
@@ -119,9 +116,6 @@ export default function ObjectDetected({
           if (colorType == "objectType") {
             box.material = meshMatrials[classId];
             edge.material = lineMatrials[classId];
-          } else if (colorType == "sensorType") {
-            box.material = sensorMeshMatrials[object.sensor];
-            edge.material = sensorLineMatrials[object.sensor];
           }
           box.visible = planeVisible;
 

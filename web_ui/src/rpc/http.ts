@@ -530,12 +530,10 @@ export async function calibrateGround({
 export async function calibrateHeading({
   source,
   target,
-  anchor,
   key,
 }: {
   source: [number, number][];
   target: [number, number][];
-  anchor: [number, number];
   key: number;
 }) {
   const payload = {
@@ -543,7 +541,6 @@ export async function calibrateHeading({
     params: {
       source,
       target,
-      anchor,
       key,
     },
     jsonrpc: 2.0,

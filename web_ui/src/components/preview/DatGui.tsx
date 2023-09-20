@@ -104,10 +104,6 @@ export default function PreviewDatGui({ config = DEFAULT_CONFIG, setConfig, t = 
     folder = pane.addFolder({ title: t("object"), expanded: false });
     folder.addInput(config.object, "visible", { label: t("objectVisible") });
     folder.addInput(config.object, "showOnImage", { label: t("showOnImage") });
-    folder.addInput(config.object, "color", {
-      label: t("color"),
-      options: Object.fromEntries(["objectType", "sensorType"].map((x) => [t(x), x])),
-    });
     folder.addInput(config.object, "showArrow", { label: t("direction") });
     folder.addInput(config.object, "showInfo", { label: t("details") });
     folder.addInput(config.object, "labelScale", {

@@ -231,11 +231,6 @@
           "rule": "repeated",
           "type": "Trajectory",
           "id": 12
-        },
-        "sensor": {
-          "rule": "required",
-          "type": "SensorType",
-          "id": 13
         }
       },
       "nested": {
@@ -254,16 +249,6 @@
             "STATIC": 1,
             "STOPPED": 2,
             "MOVING": 3
-          }
-        },
-        "SensorType": {
-          "values": {
-            "LIDAR": 0,
-            "CAMERA": 1,
-            "RADAR": 2,
-            "LIDAR_CAMERA": 3,
-            "RADAR_CAMERA": 4,
-            "LIDAR_RADAR_CAMERA": 5
           }
         }
       }

@@ -305,7 +305,6 @@ const translation = {
   step: "间隔",
   showOnImage: "2D显示",
   objectType: "目标类别",
-  sensorType: "传感器类型",
   objObject: "模型",
   polarGrid: "极坐标栅格",
   radius: "半径",

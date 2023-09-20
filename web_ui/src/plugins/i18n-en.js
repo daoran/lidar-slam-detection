@@ -284,7 +284,6 @@ const translation = {
   step: "Step",
   showOnImage: "2D Display",
   objectType: "Object Type",
-  sensorType: "Sensor Type",
   objObject: "Model",
   polarGrid: "Polar Grid",
   radius: "Radius",

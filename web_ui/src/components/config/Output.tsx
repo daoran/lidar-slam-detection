@@ -114,24 +114,7 @@ function Output({ initialValues, t = (x) => x || "" }: Props, ref: React.Ref<Ref
             />
           </div>
         </Grid>
-        <Grid item md>
-          <div hidden={!values.protocol.UDP.use}>
-            <FormControl>
-              <InputLabel>{t("coordinate")}</InputLabel>
-              <Select
-                value={values.protocol.UDP.coordinate}
-                onChange={handleChange}
-                name="protocol.UDP.coordinate"
-                label={t("coordinate")}>
-                {["local", "global"].map((x) => (
-                  <MenuItem value={x} key={x}>
-                    {t(x)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </div>
-        </Grid>
+        <Grid item md />
       </Grid>
 
       {/* CAN */}
