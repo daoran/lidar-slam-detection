@@ -1,14 +1,13 @@
 board:
     inference_engine:
-        lidar_cfg_file: sensor_inference/cfgs/detection_lidar_large.yaml
-        image_cfg_file: sensor_inference/cfgs/detection_image.yaml
-        # deactive_lidar: true
-        deactive_image: true
+        detection_capability:
+            object: true
+            trafficlight: false
+        detection_config:
+            object: sensor_inference/cfgs/detection_object.yaml
+            trafficlight: sensor_inference/cfgs/detection_trafficlight.yaml
 
-    fusion:
-        source: ['camera']
-
-pipeline: [['Source', 'Sink']]
+pipeline: [['Source', 'SLAM', 'Sink']]
 
 slam:
     mode: 'mapping'
@@ -26,12 +25,13 @@ slam:
         loop_closure: true
         key_frames_interval: [4.0, 20.0]  # distance and degree threshold
         key_frames_range: 1000
-        map_resolution: 0.3
+        map_resolution: 0.2
 
     localization:
         sensor_input: []
+        colouration: false
         key_frames_interval: [4.0, 20.0] # distance and degree threshold
-        map_resolution: 0.3
+        map_resolution: 0.2
         map_path: lp_log/map
 
 lidar:
@@ -45,7 +45,7 @@ lidar:
 
 camera:
     - {
-          name: "http://127.0.0.1:imageflir0",  # "http://$IP:$topic", "rtsp://$URI"
+          name: "http://127.0.0.1:/imageflir0",  # "http://$IP:$topic", "rtsp://$URI"
           intrinsic_parameters: [600, 600, 240, 320, 0, 0, 0, 0], # fx, fy, cx, cy, k1, k2, p1, p2
           extrinsic_parameters: [0, 0, 0, -90, 0, 90],
           undistortion: false,
@@ -83,20 +83,20 @@ ins:
     ins_fix: {
         use: true,
         status: -1,
-        stable_time: 0.0,
-        precision: 0.5,
+        stable_time: 10.0,
+        precision: 20.0,
     }
     ins_float: {
         use: true,
         status: -1,
         stable_time: 10.0,
-        precision: 5.0,
+        precision: 50.0,
     }
     ins_normal: {
         use: true,
         status: -1,
-        stable_time: 10.0,
-        precision: 20.0,
+        stable_time: 0.0,
+        precision: 200.0,
     }
 
 lidar_all:
@@ -211,12 +211,10 @@ input:
 output:
     point_cloud:
         use: false
-
         destination: 192.168.1.101
 
     object:
         use: true
-
         vehicle: true
         pedestrian: true
         cyclist: true
@@ -224,7 +222,6 @@ output:
 
     freespace:
         use: true
-
         resolution: 0.25
         min_height: 0.2
         max_height: 2.5
@@ -233,21 +230,16 @@ output:
     protocol:
         UDP:
             use: true
-
             destination: 192.168.1.101
             port: 9000
-            coordinate: "local" # global
-            anchor: [0, 0]
         CAN:
             use: false
-
             device: "can0"
             baud: 500000
 
     localization:
         UDP:
             use: false
-
             destination: 192.168.1.101
             port: 9001
 
@@ -260,5 +252,5 @@ system:
         mode: "normal" # loop
         loop_duration: 600
         exclude_keys: ["freespace"]
-        journal: false
+        journal: true
         auto_start: false
