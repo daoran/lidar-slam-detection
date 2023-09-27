@@ -9,13 +9,14 @@ class Fusion(DetectTemplate):
         self.trafficlight_data = []
 
     def do_fusion(self, object_data, trafficlight_data):
-        return self.post_process(object_data)
+        fusion_data = {**object_data, **trafficlight_data}
+        return self.post_process(fusion_data)
 
     def only_process_object(self, object_data):
         return self.post_process(object_data)
 
     def only_process_trafficlight(self, trafficlight_data):
-        return dict()
+        return self.post_process(trafficlight_data)
 
     def post_process(self, data):
         data.pop('detection_capability')

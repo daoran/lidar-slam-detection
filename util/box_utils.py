@@ -198,7 +198,10 @@ class DetectionDrawer():
     class_color[4] = (255, 255, 255)  # Traffic_Cone
     class_color[5] = (150, 127, 203)
     class_color[6] = (255, 198, 177)
-    class_color[7] = (78, 145, 240)
+    class_color[7] = (255, 255, 255)  # Traffic light, unknown color
+    class_color[8] = (0,   0, 255)    # Traffic light, red
+    class_color[9] = (0, 255,   0)    # Traffic light, green
+    class_color[10]= (0, 255, 255)    # Traffic light, yellow
 
     @staticmethod
     def draw_boxes(image, image_param, lidar_boxes, label):
@@ -224,4 +227,17 @@ class DetectionDrawer():
                 cv2.line(image, (box2d_corner[i, e[0], 0], box2d_corner[i, e[0], 1]),
                         (box2d_corner[i, e[1], 0], box2d_corner[i, e[1], 1]), color, 1,
                          lineType=cv2.LINE_AA)
+        return image
+    
+    @staticmethod
+    def draw_boxes_2D(image, param, result):
+        import cv2
+        from util.image_util import cvt_image
+        w = param['w'] // 32 * 32
+        h = param['h'] // 32 * 32
+
+        image = cvt_image(image, w, h)
+        for i in range(result['pred_boxes'].shape[0]):
+            box = result['pred_boxes'][i, :]
+            cv2.rectangle(image, (round(box[0]), round(box[1])), (round(box[2]), round(box[3])), DetectionDrawer.class_color[result['pred_colors'][i]+7], 2)    
         return image
