@@ -10,10 +10,10 @@ const validationSchema = yup.object({
   sensor_input: yup.array().of(yup.string()).min(0, "emptySensorInput"),
 });
 
-type Value = TSARI.Config["detection"];
+type Value = LSD.Config["detection"];
 export interface Props {
   initialValues: Value;
-  config: TSARI.Config;
+  config: LSD.Config;
   t?: (x: string | undefined) => string;
 }
 
