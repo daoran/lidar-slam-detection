@@ -11,13 +11,14 @@ class DetectManager(ManagerTemplate):
     def __init__(self, cfg, logger, system):
         super().__init__('Detect', cfg, logger, system)
 
-        self.engine = DetInfer(
-            **cfg["board"]["inference_engine"], logger=logger
-        )
+        # only initialize once
+        self.engine = DetInfer(**cfg["board"]["inference_engine"], logger=logger)
         self.engine.initialize()
 
     def setup(self, cfg):
         self.cfg = cfg
+
+        self.engine.setup(cfg.detection)
         self.engine.start()
 
         self.fusing = Fusion(self.logger)

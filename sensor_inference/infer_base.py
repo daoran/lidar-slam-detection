@@ -23,6 +23,9 @@ class InferBase():
     def initialize(self):
         raise NotImplementedError
 
+    def setup(self, base_cfg):
+        self.base_cfg = base_cfg
+
     def set_output(self, output_queue):
         self.output_queue = output_queue
 

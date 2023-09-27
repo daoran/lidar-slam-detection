@@ -49,17 +49,20 @@ class ObjectInfer(InferBase):
 
         # seperate the data dict
         points = data_dict.pop('points', None)
-        return {'lidar_data' : points, 'infos' : data_dict}
+
+        lidar_data = dict()
+        for sensor in self.base_cfg.sensor_input:
+            if sensor in points:
+                lidar_data[sensor] = points[sensor]
+
+        return {'lidar_data' : lidar_data, 'infos' : data_dict}
 
     def process(self, data_dict):
         if not data_dict:
             return None
 
-        # relative motion
         motion_t = np.ascontiguousarray(data_dict['infos']['motion_t'], dtype=np.float32)
-
-        # concate the time dimension
-        points = np.concatenate(list(data_dict['lidar_data'].values()), axis=0) if data_dict['infos']['lidar_valid'] else np.zeros((1, 4), dtype=np.float32)
+        points = np.concatenate(list(data_dict['lidar_data'].values()), axis=0) if bool(data_dict['lidar_data']) else np.zeros((1, 4), dtype=np.float32)
         points = np.concatenate((points, np.zeros((points.shape[0], 1))), axis=1)
 
         # cnn

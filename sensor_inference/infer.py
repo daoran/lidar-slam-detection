@@ -26,6 +26,10 @@ class DetInfer():
             engine.initialize()
             engine.set_output(self.detection_queue)
 
+    def setup(self, cfg):
+        for engine in self.engines:
+            engine.setup(cfg)
+
     def is_prepared_done(self):
         prepared = True
         for engine in self.engines:

@@ -9,6 +9,9 @@ board:
 
 pipeline: [['Source', 'SLAM', 'Sink']]
 
+detection:
+    sensor_input: []
+
 slam:
     mode: 'mapping'
     method: 'FastLIO' # FLOAM, GICPM, FastLIO

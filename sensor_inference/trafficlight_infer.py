@@ -39,9 +39,11 @@ class TrafficLightInfer(InferBase):
         # seperate the data dict
         images = data_dict.pop('image', None)
 
-        image_data = []
-        if data_dict['image_valid'] is True:
-            image_data = (self.cfg.IMAGE.NAME, images[self.cfg.IMAGE.NAME]) if self.cfg.IMAGE.NAME in images else images.copy().popitem()
+        image_data = dict()
+        for sensor in self.base_cfg.sensor_input:
+            if sensor in images:
+                image_data[sensor] = images[sensor]
+                break
 
         return {'image_data' : image_data, 'infos' : data_dict}
 
@@ -49,11 +51,11 @@ class TrafficLightInfer(InferBase):
         if not data_dict:
             return None
 
-        if self.engine is None or not data_dict['infos']['image_valid']:
+        if self.engine is None or not bool(data_dict['image_data']):
             return {'trafficlight' : data_dict['infos']}
 
         # preprocess
-        image_name, image = data_dict['image_data']
+        image_name, image = data_dict['image_data'].popitem()
         padding_width  = data_dict['infos']['image_param'][image_name]['w'] // 32 * 32
         padding_height = data_dict['infos']['image_param'][image_name]['h'] // 32 * 32
         image = cvt_image(image, padding_width, padding_height)
