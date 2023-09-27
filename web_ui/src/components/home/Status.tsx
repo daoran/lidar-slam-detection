@@ -43,20 +43,25 @@ export default function Status({ t, normal, ...props }: Props) {
     run();
   }, []);
 
-  const handleModeChange = () => {
-    if (!config) {
-      return;
-    }
-    let mode = config.input;
-    if (isOnline) {
-      mode.mode = "offline";
-    } else {
-      mode.mode = "online";
-    }
-    config.input = { ...mode };
-    setIsLoading(true);
-    postConfig(config).then(() => {
+  useEffect(() => {
+    if (!normal) {
       run();
+    }
+  }, [normal]);
+
+  const handleModeChange = () => {
+    getConfig().then((cfg) => {
+      let mode = cfg.input;
+      if (isOnline) {
+        mode.mode = "offline";
+      } else {
+        mode.mode = "online";
+      }
+      cfg.input = { ...mode };
+      setIsLoading(true);
+      postConfig(cfg).then(() => {
+        run();
+      });
     });
   };
 
