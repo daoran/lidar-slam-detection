@@ -1,9 +1,11 @@
 {
   "board": {
-    "fusion": { "source": ["camera"] },
     "inference_engine": {
-      "image_cfg_file": "sensor_inference/cfgs/detection_image.yaml",
-      "lidar_cfg_file": "sensor_inference/cfgs/detection_lidar_large.yaml"
+      "detection_capability": { "object": true, "trafficlight": false },
+      "detection_config": {
+        "object": "sensor_inference/cfgs/detection_object.yaml",
+        "trafficlight": "sensor_inference/cfgs/detection_trafficlight.yaml"
+      }
     },
     "network": [
       {
@@ -11,19 +13,11 @@
         "IP": "192.168.1.100",
         "gateway": "192.168.1.1",
         "mask": "255.255.255.0"
-      },
-      {
-        "DHCP": true,
-        "IP": "192.168.1.101",
-        "gateway": "192.168.1.1",
-        "mask": "255.255.255.0"
       }
     ],
     "time_sync": {
-      "gpio_trigger": { "freq": 10, "gpio": 492, "use": false },
       "gps": { "device": "/dev/ttyTHS0", "use": false },
       "ntp": [{ "server": "ntp.aliyun.com" }],
-      "pps_out": { "gpio": 491, "use": false },
       "ptp": [{ "interface": "eth0", "mode": "master" }]
     }
   },
@@ -75,7 +69,6 @@
   },
   "lidar": [
     {
-      "epsilon": 0.5,
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "Ouster-OS1-128",
       "port": 7502,
@@ -85,84 +78,88 @@
   ],
   "lidar_all": [
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "Ouster-OS1-128",
       "port": 7502,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "Ouster-OS2-128",
       "port": 7502,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
+      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
+      "name": "Ouster-OS1-64",
+      "port": 7502,
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
+    },
+    {
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "Ouster-OS1-32",
       "port": 7502,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
-      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
-      "name": "R-Fans-32",
-      "port": 2014,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
-    },
-    {
-      "epsilon": 0.5,
-      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
-      "name": "R-Fans-16",
-      "port": 2016,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
-    },
-    {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "VLP-16",
       "port": 2370,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "LS-C-16",
       "port": 2368,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "RS-LiDAR-16",
       "port": 6699,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "RS-LiDAR-32",
       "port": 6699,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     },
     {
-      "epsilon": 0.5,
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
+      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
+      "name": "RS-Ruby-Lite",
+      "port": 6699,
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
+    },
+    {
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
+      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
+      "name": "RS-Helios-16P",
+      "port": 6699,
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
+    },
+    {
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
+      "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
+      "name": "RS-Helios",
+      "port": 6699,
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
+    },
+    {
+      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0],
       "extrinsic_parameters": [0, 0, 0, 0, 0, 0],
       "name": "Custom",
       "port": 2688,
-      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4],
-      "exclude": [-0.5, -0.5, 0, 0.5, 0.5, 0]
+      "range": [-72.0, -72.0, -2, 72.0, 72.0, 4]
     }
   ],
   "output": {
@@ -208,29 +205,39 @@
   ],
   "roi": [{ "contour": [], "include": true }],
   "slam": {
-    "origin": {
-      "use": false,
-      "latitude": 0.0,
-      "longitude": 0.0,
-      "altitude": 0.0
-    },
     "localization": {
+      "colouration": false,
+      "key_frames_interval": [4.0, 20.0],
       "map_path": "lp_log/map",
-      "map_resolution": 0.3,
-      "key_frames_interval": [30, 20],
-      "sensor_input": ["0-Ouster-OS1-128"],
-      "colouration": false
+      "map_resolution": 0.2,
+      "sensor_input": ["0-Ouster-OS1-128"]
     },
     "mapping": {
-      "key_frames_interval": [2.0, 3.0],
-      "key_frames_range": 1000,
-      "map_resolution": 0.3,
-      "sensor_input": ["0-Ouster-OS1-128", "RTK"],
       "ground_constraint": true,
-      "loop_closure": true
+      "key_frames_interval": [4.0, 20.0],
+      "key_frames_range": 1000,
+      "loop_closure": true,
+      "map_resolution": 0.2,
+      "sensor_input": ["0-Ouster-OS1-128"]
     },
+    "method": "RTKM",
     "mode": "mapping",
-    "method": "RTKM"
+    "origin": {
+      "altitude": 0.0,
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "use": true
+    }
   },
-  "system": { "log_level": "INFO" }
+  "detection": { "sensor_input": ["0-Ouster-OS1-128"] },
+  "system": {
+    "log_level": "INFO",
+    "record": {
+      "auto_start": false,
+      "exclude_keys": ["freespace"],
+      "journal": true,
+      "loop_duration": 600,
+      "mode": "normal"
+    }
+  }
 }

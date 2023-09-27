@@ -26,6 +26,7 @@ import LidarList, { Ref as LidarRef } from "./Lidar";
 import CameraList, { Ref as CameraRef, CameraType } from "./Camera";
 import RadarList, { Ref as RadarRef } from "./Radar";
 import InsList, { Ref as InsRef } from "./Ins";
+import Detection, { Ref as DetectionRef } from "./Detection";
 import Detect, { Ref as DetectRef } from "./Detect";
 import Slam, { Ref as SlamRef } from "./Slam";
 import Output, { Ref as OutputRef } from "./Output";
@@ -76,6 +77,7 @@ export default function Config() {
   const radarRef = useRef<RadarRef>(null);
   const insRef = useRef<InsRef>(null);
   const detectRef = useRef<DetectRef>(null);
+  const detectionRef = useRef<DetectionRef>(null);
   const slamRef = useRef<SlamRef>(null);
   const outputRef = useRef<OutputRef>(null);
   const advanceRef = useRef<AdvanceRef>(null);
@@ -162,6 +164,13 @@ export default function Config() {
           }
           config.camera[index] = { ...configCamera[index] };
         });
+      }
+      if (detectionRef.current && config?.detection) {
+        if (!detectionRef.current.isValid) throw new Error();
+          config.detection = detectionRef.current.validationSchema.cast(
+          detectionRef.current.values
+        ) as LSD.Config["detection"];
+        config.detection = { ...config.detection };
       }
       if (detectRef.current && config?.output) {
         if (!detectRef.current.isValid) throw new Error();
@@ -261,7 +270,12 @@ export default function Config() {
         />
       ),
       ins: show.ins && config?.ins && <InsList ref={insRef} initialValues={config?.ins} t={t} />,
-      detect: show.detect && config?.output && <Detect ref={detectRef} initialValues={config?.output} t={t} />,
+      detect: show.detect && config?.detection && config?.output && (
+        <>
+          <Detection ref={detectionRef} initialValues={config?.detection} config={config} t={t} />
+          <Detect ref={detectRef} initialValues={config?.output} t={t} />
+        </>
+      ),
       slam: show.slam && config?.slam && <Slam ref={slamRef} initialValues={config?.slam} config={config} t={t} />,
       output: show.output && config?.output && <Output ref={outputRef} initialValues={config?.output} t={t} />,
       advance: show.advance && config?.output?.point_cloud && (
