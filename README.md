@@ -9,10 +9,17 @@ LSD currently supports many features:
 - [x] support multiple LiDAR, camera, radar and INS/IMU sensors.
 - [x] support user-friendly calibration for LiDAR and camera etc.
 - [x] support software time sync, data record and playback.
-- [x] support CNN based pointcloud object detection, tracking and prediction.
+- [x] support voxel 3D-CNN based pointcloud object detection, tracking and prediction.
 - [x] support GICP, FLOAM and FastLIO based frontend odometry and G2O based pose graph optimization.
 - [x] support Web based interactive map correction tool(editor).
 - [x] support communication with [ROS](#ros).
+
+# TODO
+
+- [x] Support traffic light detection.
+- [ ] Support GIOU, two stage matching of object tracking.
+- [ ] Support voxel 3D-CNN based freespace detection.
+- [ ] Support Transformer based motion prediction.
 
 # Overview
 
