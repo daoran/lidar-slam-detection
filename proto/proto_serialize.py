@@ -65,13 +65,14 @@ def serialize_to_string(result_dict, display_on_image=False, use_raw_image=False
                 # draw detection results
                 for name, img in result_dict['image'].copy().items():
                     result_dict['image'][name] = DetectionDrawer.draw_boxes(result_dict['image'][name],
-                                            result_dict['image_param'][name],
-                                            result_dict["pred_boxes"],
-                                            result_dict["pred_attr"][:, 6])
-                if 'trafficlight' in result_dict:
-                    result_dict['image'][result_dict['trafficlight']['image_name']] = DetectionDrawer.draw_boxes_2D(result_dict['image'][result_dict['trafficlight']['image_name']], 
-                                                                                                                    result_dict['image_param'][result_dict['trafficlight']['image_name']],
-                                                                                                                    result_dict['trafficlight'])
+                                                                            result_dict['image_param'][name],
+                                                                            result_dict["pred_boxes"],
+                                                                            result_dict["pred_attr"][:, 6])
+
+            if display_on_image is True and 'trafficlight' in result_dict:
+                result_dict['image'] = DetectionDrawer.draw_boxes_2D(result_dict['image'],
+                                                                     result_dict['image_param'],
+                                                                     result_dict['trafficlight'])
 
             images = result_dict['image'].copy()
             images = encoder_image_jpeg(images)

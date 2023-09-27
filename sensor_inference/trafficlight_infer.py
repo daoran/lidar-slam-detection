@@ -28,8 +28,8 @@ class TrafficLightInfer(InferBase):
     def build_engine(self, calib):
         from sensor_inference.utils.trafficlight_post_process import PostProcesser
         self.engine = build_engine(self.cfg.TRT_FILE)
-        self.post_processer = PostProcesser(model_cfg=self.cfg.MODEL, 
-                                            num_class=len(self.cfg.CLASS_NAMES), 
+        self.post_processer = PostProcesser(model_cfg=self.cfg.MODEL,
+                                            num_class=len(self.cfg.CLASS_NAMES),
                                             class_names=self.cfg.CLASS_NAMES)
 
     def prepare_data(self, data_dict):
@@ -38,43 +38,34 @@ class TrafficLightInfer(InferBase):
 
         # seperate the data dict
         images = data_dict.pop('image', None)
-        return {'image_data' : images, 'infos' : data_dict}
+
+        image_data = []
+        if data_dict['image_valid'] is True:
+            image_data = (self.cfg.IMAGE.NAME, images[self.cfg.IMAGE.NAME]) if self.cfg.IMAGE.NAME in images else images.copy().popitem()
+
+        return {'image_data' : image_data, 'infos' : data_dict}
 
     def process(self, data_dict):
         if not data_dict:
             return None
 
-        if not data_dict['infos']['image_valid']:
-            return {'trafficlight' : None}
+        if self.engine is None or not data_dict['infos']['image_valid']:
+            return {'trafficlight' : data_dict['infos']}
 
-        names, images = [], []
-        for name, image in data_dict['image_data'].items():
-          names.append(name)
-          images.append(image)
-        
         # preprocess
-        # image name should be specified
-        if self.cfg.IMAGE.NAME in data_dict['image_data'].keys():
-            image = cvt_image(data_dict['image_data'][self.cfg.IMAGE.NAME], 
-                              data_dict['infos']['image_param'][self.cfg.IMAGE.NAME]['w'] // 32 * 32, 
-                              data_dict['infos']['image_param'][self.cfg.IMAGE.NAME]['h'] // 32 * 32)
-        else:
-            self.cfg.IMAGE.NAME, image = data_dict['image_data'].popitem()
-            image = cvt_image(image, 
-                              data_dict['infos']['image_param'][self.cfg.IMAGE.NAME]['w'] // 32 * 32, 
-                              data_dict['infos']['image_param'][self.cfg.IMAGE.NAME]['h'] // 32 * 32)
-        
+        image_name, image = data_dict['image_data']
+        padding_width  = data_dict['infos']['image_param'][image_name]['w'] // 32 * 32
+        padding_height = data_dict['infos']['image_param'][image_name]['h'] // 32 * 32
+        image = cvt_image(image, padding_width, padding_height)
         image_infer = np.expand_dims(image, axis=0).astype(np.float32)
 
         # cnn inference
-        pred = self.engine.run([image_infer])
+        preds = self.engine.run([image_infer])
 
         # postprocess
-        pred_dicts = self.post_processer.forward(pred)
-        pred_dicts = self.post_processer.detect_colors(image, pred_dicts)
-        pred_dicts['image_name'] = self.cfg.IMAGE.NAME
+        pred_dicts = self.post_processer.forward(image, preds[0])
+        pred_dicts['image_name'] = image_name
 
-        trafficlight_result = {"trafficlight": pred_dicts}
-        data_dict['infos'].update(trafficlight_result)
+        data_dict['infos']['trafficlight'] = pred_dicts
         result = {'trafficlight' : data_dict['infos']}
         return result

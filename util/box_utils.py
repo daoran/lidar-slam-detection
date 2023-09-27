@@ -192,16 +192,18 @@ def boxes3d_to_corners3d_kitti_camera(boxes3d, bottom_center=True):
 
 class DetectionDrawer():
     class_color = dict()
-    class_color[1] = (240, 145, 78)   # Vehicle
+    class_color[1] = (240, 145,  78)  # Vehicle
     class_color[2] = (177, 198, 255)  # Pedestrian
     class_color[3] = (203, 127, 150)  # Cyclist
     class_color[4] = (255, 255, 255)  # Traffic_Cone
     class_color[5] = (150, 127, 203)
     class_color[6] = (255, 198, 177)
-    class_color[7] = (255, 255, 255)  # Traffic light, unknown color
-    class_color[8] = (0,   0, 255)    # Traffic light, red
-    class_color[9] = (0, 255,   0)    # Traffic light, green
-    class_color[10]= (0, 255, 255)    # Traffic light, yellow
+
+    traffic_color = dict()
+    traffic_color[0] = (255, 255, 255)  # Traffic light, unknown color
+    traffic_color[1] = (0,   0,   255)  # Traffic light, red
+    traffic_color[2] = (0,   255,   0)  # Traffic light, green
+    traffic_color[3] = (0,   255, 255)  # Traffic light, yellow
 
     @staticmethod
     def draw_boxes(image, image_param, lidar_boxes, label):
@@ -228,16 +230,20 @@ class DetectionDrawer():
                         (box2d_corner[i, e[1], 0], box2d_corner[i, e[1], 1]), color, 1,
                          lineType=cv2.LINE_AA)
         return image
-    
+
     @staticmethod
-    def draw_boxes_2D(image, param, result):
+    def draw_boxes_2D(images, image_param, trafficlight):
         import cv2
         from util.image_util import cvt_image
-        w = param['w'] // 32 * 32
-        h = param['h'] // 32 * 32
 
-        image = cvt_image(image, w, h)
-        for i in range(result['pred_boxes'].shape[0]):
-            box = result['pred_boxes'][i, :]
-            cv2.rectangle(image, (round(box[0]), round(box[1])), (round(box[2]), round(box[3])), DetectionDrawer.class_color[result['pred_colors'][i]+7], 2)    
-        return image
+        image_name     = trafficlight['image_name']
+        padding_width  = image_param[image_name]['w'] // 32 * 32
+        padding_height = image_param[image_name]['h'] // 32 * 32
+        images[image_name] = cvt_image(images[image_name], padding_width, padding_height)
+
+        for i in range(trafficlight['pred_boxes'].shape[0]):
+            color = DetectionDrawer.traffic_color[trafficlight['pred_colors'][i]]
+            box = trafficlight['pred_boxes'][i, :]
+            cv2.rectangle(images[image_name], (round(box[0]), round(box[1])), (round(box[2]), round(box[3])), color, 2)
+
+        return images

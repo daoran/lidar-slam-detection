@@ -3,6 +3,7 @@ try:
     import tensorrt
     from .TensorRT8 import runtime_engine
 except Exception as e:
-    raise Exception("Runtime backend is unavailable")
+    from . import dummy_engine as runtime_engine
+    print("WARN: TensorRT engine is unavailable")
 
 RuntimeBackend = runtime_engine.RuntimeBackend
