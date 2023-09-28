@@ -10,7 +10,7 @@ board:
 pipeline: [['Source', 'SLAM', 'Sink']]
 
 detection:
-    sensor_input: []
+    sensor_input: ["0-Ouster-OS1-64", "1-Ouster-OS1-128", "2-Ouster-OS1-64", "0"]
 
 slam:
     mode: 'mapping'
