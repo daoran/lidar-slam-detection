@@ -150,12 +150,6 @@ class PlayerDataManager(DataManagerTemplate):
         if 'frame_timestamp_monotonic' not in data_dict:
             data_dict['frame_timestamp_monotonic'] = data_dict['frame_start_timestamp']
 
-        for name, data in data_dict['points'].copy().items():
-            if 'Ouster-OS1' in name:
-                data_dict['points'][name[0] + '-' + 'Ouster-OS1'] = data_dict['points'].pop(name)
-            elif 'Ouster-OS2' in name:
-                data_dict['points'][name[0] + '-' + 'Ouster-OS2'] = data_dict['points'].pop(name)
-
         if 'points_attr' not in data_dict:
             data_dict['points_attr'] = dict()
             for name, data in data_dict['points'].items():
@@ -163,6 +157,14 @@ class PlayerDataManager(DataManagerTemplate):
                     timestamp=data_dict['frame_start_timestamp'],
                     points_attr=np.zeros((data.shape[0], 2), dtype=np.float32)
                 )
+
+        for name, data in data_dict['points'].copy().items():
+            if 'Ouster-OS1' in name:
+                data_dict['points'][name[0] + '-' + 'Ouster-OS1'] = data_dict['points'].pop(name)
+                data_dict['points_attr'][name[0] + '-' + 'Ouster-OS1'] = data_dict['points_attr'].pop(name)
+            elif 'Ouster-OS2' in name:
+                data_dict['points'][name[0] + '-' + 'Ouster-OS2'] = data_dict['points'].pop(name)
+                data_dict['points_attr'][name[0] + '-' + 'Ouster-OS2'] = data_dict['points_attr'].pop(name)
 
         for name, param in data_dict['image_param'].items():
             if 'timestamp' not in param:
