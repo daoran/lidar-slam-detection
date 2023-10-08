@@ -1,10 +1,10 @@
-import sensor_driver.common_lib.cpp_utils as util
 from module.detect.detect_template import DetectTemplate
 
 class Fusion(DetectTemplate):
     def __init__(self, logger = None):
         super().__init__(name = 'fusion', logger = logger)
-        self.logger = logger
+
+    def prepare(self):
         self.object_data = []
         self.trafficlight_data = []
 
@@ -21,10 +21,6 @@ class Fusion(DetectTemplate):
     def post_process(self, data):
         data.pop('detection_capability')
         return data
-
-    def _run_thread(self):
-        util.init_backtrace_handle()
-        super()._run_thread()
 
     def process(self, input_dict):
         if 'object' in input_dict:

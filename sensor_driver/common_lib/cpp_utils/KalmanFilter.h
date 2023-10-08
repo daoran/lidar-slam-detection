@@ -14,7 +14,7 @@ public:
 
     void Prediction(double dt, Eigen::Matrix<float, 4, 4> &m, float dh);
 
-    bool KFUpdate(Eigen::VectorXd &z, double dh_threshold);
+    bool KFUpdate(Eigen::VectorXd &z);
 
     Eigen::VectorXd& GetX();
 

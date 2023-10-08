@@ -2,97 +2,83 @@ import numpy as np
 
 import sensor_driver.common_lib.cpp_utils as util
 from module.detect.detect_template import DetectTemplate
-from sensor_fusion.AB3DMOT.model import AB3DMOT, PassThrough
+from sensor_fusion.MOT3D.model import MOT3D, PassThrough
 
-def seperate_predict(pred_dicts, key):
-    cls_mask = (pred_dicts['pred_attr'][:, 6] == key)
-    cls_dict = dict()
-    score = np.expand_dims(pred_dicts['pred_attr'][cls_mask, 5], axis=1)
-    cls_dict['dets'] = np.concatenate((pred_dicts['pred_boxes'][cls_mask], score), axis = 1).astype(np.float32)
-    cls_dict['label'] = np.expand_dims(pred_dicts['pred_attr'][cls_mask, 6], axis=1)
-    # remain the other class box
+def seperate_predict(pred_dicts, cls_idx):
+    cls_mask = (pred_dicts['pred_attr'][:, 6] == cls_idx)
+
+    cls_boxes = pred_dicts['pred_boxes'][cls_mask]
+    cls_score = pred_dicts['pred_attr'][cls_mask, 5, None]
+    cls_label = pred_dicts['pred_attr'][cls_mask, 6, None]
+    track_dict = dict()
+    track_dict['detections']  = np.concatenate((cls_boxes, cls_score, cls_label), axis=1)
+
     non_cls_mask = ~cls_mask
     pred_dicts['pred_boxes'] = pred_dicts['pred_boxes'][non_cls_mask]
-    pred_dicts['pred_attr'] = pred_dicts['pred_attr'][non_cls_mask]
-    pred_dicts['pred_traj'] = pred_dicts['pred_traj'][non_cls_mask]
-    return pred_dicts, cls_dict
+    pred_dicts['pred_attr']  = pred_dicts['pred_attr'][non_cls_mask]
+    pred_dicts['pred_traj']  = pred_dicts['pred_traj'][non_cls_mask]
+    return pred_dicts, track_dict
 
-def concat_trackers(track_dict, trackers, traj):
-    track_dict['pred']['pred_boxes'] = np.concatenate((track_dict['pred']['pred_boxes'], trackers[:, 0:7]), axis=0)
-    track_dict['pred']['pred_attr'] = np.concatenate((track_dict['pred']['pred_attr'], trackers[:, 7:]), axis=0)
-    track_dict['pred']['pred_traj'] = np.concatenate((track_dict['pred']['pred_traj'], traj), axis=0)
-    return track_dict
+def concat_trackers(pred_dicts, tracklet, trajectory):
+    pred_dicts['pred_boxes'] = np.concatenate((pred_dicts['pred_boxes'], tracklet[:, :7]), axis=0)
+    pred_dicts['pred_attr']  = np.concatenate((pred_dicts['pred_attr'],  tracklet[:, 7:]), axis=0)
+    pred_dicts['pred_traj']  = np.concatenate((pred_dicts['pred_traj'],  trajectory), axis=0)
+    return pred_dicts
 
-def prepare_tracking(pred_dicts, cls_dict):
-    pred_labels = pred_dicts.pop('pred_labels')
-    pred_scores = pred_dicts.pop('pred_scores')
+def prepare_tracking(pred_dicts, class_names):
+    pred_labels  = pred_dicts.pop('pred_labels')
+    pred_scores  = pred_dicts.pop('pred_scores')
     num_obstacle = pred_labels.shape[0]
 
-    pred_ids = np.zeros((num_obstacle, 1), dtype = np.int32)
-    pred_age = np.ones((num_obstacle, 1), dtype = np.int32)
-    pred_valid = np.ones((num_obstacle, 1), dtype = np.bool)
-    pred_status = np.zeros((num_obstacle, 1), dtype = np.int32)
-    pred_state = np.zeros((num_obstacle, 4), dtype = np.float32)
-    # velo_x, velo_y, heading_rate, accel_x, id, score, label, age, valid, status
-    pred_dicts['pred_attr'] = np.concatenate([pred_state, pred_ids, pred_scores, pred_labels, pred_age, pred_valid, pred_status], axis = 1)
-    pred_dicts['pred_traj'] = np.zeros((num_obstacle, 20, 7), dtype = np.float32)
-    for (key, cls_name) in cls_dict.items():
-        if cls_name == 'Vehicle':
-            pred_dicts, veh_dist = seperate_predict(pred_dicts, key)
-        elif cls_name == 'Pedestrian':
-            pred_dicts, ped_dist = seperate_predict(pred_dicts, key)
-        elif cls_name == 'Cyclist':
-            pred_dicts, cyc_dist = seperate_predict(pred_dicts, key)
-        elif cls_name == 'Traffic_Cone':
-            pred_dicts, con_dist = seperate_predict(pred_dicts, key)
+    pred_state   = np.zeros((num_obstacle, 4), dtype=np.float32) # vx, vy, gyro, ax
+    pred_ids     = np.zeros((num_obstacle, 1), dtype=np.int32)
+    pred_age     = np.ones((num_obstacle, 1), dtype=np.int32)
+    pred_valid   = np.ones((num_obstacle, 1), dtype=np.bool)
+    pred_status  = np.zeros((num_obstacle, 1), dtype=np.int32)
 
-    track_dict = {'veh': veh_dist, 'ped': ped_dist, 'cyc': cyc_dist, 'con': con_dist,'pred': pred_dicts}
-    return track_dict
+    # vx, vy, gyro, ax, id, score, label, age, valid, status
+    pred_dicts['pred_attr'] = np.concatenate([pred_state, pred_ids, pred_scores, pred_labels, pred_age, pred_valid, pred_status], axis=1)
+    pred_dicts['pred_traj'] = np.zeros((num_obstacle, 20, 7), dtype=np.float32)
+
+    track_data = []
+    for cls_idx, cls_name in enumerate(class_names):
+        pred_dicts, track_dict = seperate_predict(pred_dicts, cls_idx + 1)
+        track_data.append(track_dict)
+
+    return track_data, pred_dicts
 
 class Tracker(DetectTemplate):
     def __init__(self, logger = None):
         super().__init__(name = 'tracker', logger = logger)
-        cls_name = ['Vehicle', 'Pedestrian', 'Cyclist', 'Traffic_Cone']
-        self.cls_dict = dict()
-        for i in range(0, len(cls_name)):
-            self.cls_dict[i+1] = cls_name[i]
+        self.class_names = ['Vehicle', 'Pedestrian', 'Cyclist', 'Traffic_Cone']
 
-        self.veh_tracker = AB3DMOT(
-            max_age=5, min_hits=2, method='IOU', threshold={True: 0.1, False : 0.01},
-            movable=True, score_th=0.25
-        )
-        self.ped_tracker = AB3DMOT(
-            max_age=5, min_hits=4, method='CenterDistance', threshold={True: 0.5, False: 3.0},
-            movable=True, score_th=0.15
-        )
-        self.cyc_tracker = AB3DMOT(
-            max_age=5, min_hits=4, method='CenterDistance', threshold={True: 2.0, False: 4.0},
-            movable=True, score_th=0.15
-        )
-        self.con_tracker = AB3DMOT(
-            max_age=5, min_hits=4, method='CenterDistance', threshold={True: 0.5, False: 3.0},
-            movable=False, score_th=0.15
-        )
+    def prepare(self):
+        util.init_filters()
+        MOT3D.reset()
 
-    def _run_thread(self):
-        util.init_backtrace_handle()
-        super()._run_thread()
+        self.veh_tracker = MOT3D(logger=self.logger, config = dict(
+            max_age=5, min_hits=2, giou_th=1.0, movable=True,  score_th=0.30
+        ))
+        self.ped_tracker = MOT3D(logger=self.logger, config = dict(
+            max_age=5, min_hits=3, giou_th=1.2, movable=True,  score_th=0.25
+        ))
+        self.cyc_tracker = MOT3D(logger=self.logger, config = dict(
+            max_age=5, min_hits=3, giou_th=1.5, movable=True,  score_th=0.25
+        ))
+        self.con_tracker = MOT3D(logger=self.logger, config = dict(
+            max_age=5, min_hits=3, giou_th=1.5, movable=False, score_th=0.20
+        ))
+        self.trackers = [self.veh_tracker, self.ped_tracker, self.cyc_tracker, self.con_tracker]
 
     def process(self, input_dict):
-        motion_t = input_dict.pop('motion_t')
+        motion_valid   = input_dict.pop('motion_valid')
+        motion_t       = input_dict.pop('motion_t')
         motion_heading = input_dict.pop('motion_heading')
-        ins_valid = input_dict.pop('motion_valid')
-        timestep = input_dict.pop('timestep') / 1000000.0
+        timestep       = input_dict.pop('timestep') / 1000000.0
 
-        track_dict = prepare_tracking(input_dict, self.cls_dict)
-        trackers_veh, veh_traj = self.veh_tracker.update(track_dict['veh'], motion_t, motion_heading, ins_valid, timestep)
-        trackers_ped, ped_traj = self.ped_tracker.update(track_dict['ped'], motion_t, motion_heading, ins_valid, timestep)
-        trackers_cyc, cyc_traj = self.cyc_tracker.update(track_dict['cyc'], motion_t, motion_heading, ins_valid, timestep)
-        trackers_con, con_traj = self.con_tracker.update(track_dict['con'], motion_t, motion_heading, ins_valid, timestep)
+        track_data, pred_dicts = prepare_tracking(input_dict, self.class_names)
+        for idx, tracker in enumerate(self.trackers):
+            tracklet, trajectory = tracker.update(track_data[idx], motion_t, motion_heading, motion_valid, timestep)
+            pred_dicts = concat_trackers(pred_dicts, tracklet, trajectory)
 
-        track_dict = concat_trackers(track_dict, trackers_veh, veh_traj)
-        track_dict = concat_trackers(track_dict, trackers_ped, ped_traj)
-        track_dict = concat_trackers(track_dict, trackers_cyc, cyc_traj)
-        track_dict = concat_trackers(track_dict, trackers_con, con_traj)
-
-        return track_dict['pred']
+        return pred_dicts

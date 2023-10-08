@@ -57,7 +57,7 @@ MODEL:
     POST_PROCESSING:
         RECALL_THRESH_LIST: [0.3, 0.5, 0.7]
         SCORE_THRESH: {
-            'Vehicle': 0.20,
+            'Vehicle': 0.10,
             'Pedestrian': 0.10,
             'Cyclist': 0.10,
             'Traffic_Cone': 0.10,
@@ -69,6 +69,6 @@ MODEL:
         NMS_CONFIG:
             MULTI_CLASSES_NMS: False
             NMS_TYPE: nms_gpu
-            NMS_THRESH: 0.4
+            NMS_THRESH: 0.25
             NMS_PRE_MAXSIZE: 2048
             NMS_POST_MAXSIZE: 256

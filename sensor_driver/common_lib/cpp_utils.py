@@ -53,9 +53,6 @@ def get_relative_transform(lat0, lon0, alt0, yaw0, pitch0, roll0,
 def pointcloud_downsample(points, voxel_size):
     return cpp_utils_ext.pointcloud_downsample(points, voxel_size)
 
-def get_distance_matrix(det, trk, out):
-    cpp_utils_ext.get_distance_matrix(det, trk, out)
-
 def get_association(det_len, trk_len, matched_indices, threshold, iou_matrix):
     return cpp_utils_ext.get_association(det_len, trk_len, matched_indices, threshold, iou_matrix)
 
@@ -65,23 +62,11 @@ def init_filters():
 def use_filter(handle, is_static, x):
     cpp_utils_ext.use_filter(handle, is_static, x)
 
-def filter_set_x(handle, x):
-    cpp_utils_ext.filter_set_x(handle, x)
-
-def filter_get_x(handle):
-    return cpp_utils_ext.filter_get_x(handle)
-
 def filter_predict(handle, dt, motion, dh):
     return cpp_utils_ext.filter_predict(handle, dt, motion, dh)
 
-def filter_update(handle, z, dh_threshold):
-    return cpp_utils_ext.filter_update(handle, z, dh_threshold)
+def filter_update(handle, z):
+    return cpp_utils_ext.filter_update(handle, z)
 
 def motion_prediction(handle, trajectory):
     cpp_utils_ext.motion_prediction(handle, trajectory)
-
-def init_serial(device, baud):
-    cpp_utils_ext.init_serial(device, baud)
-
-def serial_read():
-    return cpp_utils_ext.serial_read()

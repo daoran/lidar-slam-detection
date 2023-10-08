@@ -17,7 +17,6 @@
 #include "InterProcess.h"
 #include "UTMProjector.h"
 #include "KalmanFilter.h"
-#include "SerialDriver.h"
 
 namespace py=pybind11;
 
@@ -186,23 +185,6 @@ py::array_t<float> pointcloud_downsample(py::array_t<float> &points, float voxel
     return pointcloud_downsample_pcl(points, voxel_size);
 }
 
-void get_distance_matrix(const py::array_t<float> &det,
-                         const py::array_t<float> &trk,
-                         py::array_t<float> &out) {
-    auto out_rw = out.mutable_unchecked<2>();
-    auto ref_det = det.unchecked<2>();
-    auto ref_trk = trk.unchecked<2>();
-    int det_len = ref_det.shape(0);
-    int trk_len = ref_trk.shape(0);
-    for(int i = 0; i < det_len; i++) {
-        for(int j = 0; j < trk_len; j++) {
-            out_rw(i, j) = -sqrt((ref_det(i, 0) - ref_trk(j, 0)) * (ref_det(i, 0) - ref_trk(j, 0)) +
-                                 (ref_det(i, 1) - ref_trk(j, 1)) * (ref_det(i, 1) - ref_trk(j, 1)) +
-                                 (ref_det(i, 2) - ref_trk(j, 2)) * (ref_det(i, 2) - ref_trk(j, 2)));
-        }
-    }
-}
-
 std::vector<py::array_t<int>> get_association(int det_len, int trk_len,
                                               const py::array_t<int> &matched_indices,
                                               float threshold,
@@ -234,7 +216,7 @@ std::vector<py::array_t<int>> get_association(int det_len, int trk_len,
     for(int i = 0; i < match_len; i++) {
         int det_id = ref_match(i, 0);
         int trk_id = ref_match(i, 1);
-        if (ref_iou(det_id, trk_id) < threshold) {
+        if (ref_iou(det_id, trk_id) > threshold) {
             unmatched_detections.emplace_back(det_id);
             unmatched_trackers.emplace_back(trk_id);
         } else {
@@ -243,22 +225,6 @@ std::vector<py::array_t<int>> get_association(int det_len, int trk_len,
         }
     }
 
-    auto unmatch_det = unmatched_detections.begin();
-    while(unmatch_det != unmatched_detections.end()) {
-        bool drop = false;
-        for(int i = 0; i < trk_len; i++) {
-            float iou = ref_iou(*unmatch_det, i);
-            if (iou > 0.1) {
-                drop = true;
-                break;
-            }
-        }
-        if (drop) {
-            unmatch_det = unmatched_detections.erase(unmatch_det);
-        } else {
-            unmatch_det++;
-        }
-    }
     auto matched_n = py::array_t<int>(py::array::ShapeContainer({match.size() / 2, 2}), match.data());
     auto unmatched_detections_n = py::array_t<int>(py::array::ShapeContainer({unmatched_detections.size()}), unmatched_detections.data());
     auto unmatched_trackers_n = py::array_t<int>(py::array::ShapeContainer({unmatched_trackers.size()}), unmatched_trackers.data());
@@ -267,13 +233,13 @@ std::vector<py::array_t<int>> get_association(int det_len, int trk_len,
 
 static std::map<uint64_t, std::shared_ptr<KalmanFilter>> filters;
 void init_filters() {
-    for(int i = 0; i < 256; i++) {
+    for(int i = 0; i < 65535; i++) {
         filters[i] = std::make_shared<KalmanFilter>();
     }
 }
 void use_filter(int handle, bool is_static, const py::array_t<float> &x) {
     if (filters.find(handle) == filters.end()) {
-        LOG_WARN("filter ({}) is not found", handle);
+        LOG_WARN("Kalman filter ({}) is not found", handle);
         return;
     }
     std::shared_ptr<KalmanFilter> filter = filters[handle];
@@ -287,41 +253,9 @@ void use_filter(int handle, bool is_static, const py::array_t<float> &x) {
     filter->Initialization(is_static, x_vec);
 }
 
-void filter_set_x(int handle, py::array_t<float> &x) {
-    if (filters.find(handle) == filters.end()) {
-        LOG_WARN("filter ({}) is not found", handle);
-        return;
-    }
-    std::shared_ptr<KalmanFilter> filter = filters[handle];
-
-    auto ref_x = x.unchecked<1>();
-    auto dim = ref_x.shape(0);
-    Eigen::VectorXd x_vec = Eigen::VectorXd(dim);
-    for(int i = 0; i < dim; i++) {
-        x_vec(i) = ref_x(i);
-    }
-    filter->SetX(x_vec);
-}
-
-py::array_t<float> filter_get_x(int handle) {
-    if (filters.find(handle) == filters.end()) {
-        LOG_WARN("filter ({}) is not found", handle);
-        return py::array_t<float>(py::array::ShapeContainer({0}));
-    }
-    std::shared_ptr<KalmanFilter> filter = filters[handle];
-
-    Eigen::VectorXd &vec_x = filter->GetX();
-    auto dim = vec_x.size();
-    std::vector<float> x(dim);
-    for(int i = 0; i < dim; i++) {
-        x[i] = vec_x(i);
-    }
-    return py::array_t<float>(py::array::ShapeContainer({dim}), x.data());
-}
-
 py::array_t<float> filter_predict(int handle, double dt, py::array_t<float> &motion, float dh) {
     if (filters.find(handle) == filters.end()) {
-        LOG_WARN("filter ({}) is not found", handle);
+        LOG_WARN("Kalman filter ({}) is not found", handle);
         return py::array_t<float>(py::array::ShapeContainer({0}));
     }
     std::shared_ptr<KalmanFilter> filter = filters[handle];
@@ -344,20 +278,28 @@ py::array_t<float> filter_predict(int handle, double dt, py::array_t<float> &mot
     return py::array_t<float>(py::array::ShapeContainer({dim}), x.data());
 }
 
-bool filter_update(int handle, py::array_t<float> &z, double dh_threshold) {
+py::array_t<float> filter_update(int handle, py::array_t<float> &z) {
     if (filters.find(handle) == filters.end()) {
-        LOG_WARN("filter ({}) is not found", handle);
-        return false;
+        LOG_WARN("Kalman filter ({}) is not found", handle);
+        return py::array_t<float>(py::array::ShapeContainer({0}));
     }
     std::shared_ptr<KalmanFilter> filter = filters[handle];
 
     auto ref_z = z.unchecked<1>();
-    auto dim = ref_z.shape(0);
-    Eigen::VectorXd z_vec = Eigen::VectorXd(dim);
-    for(int i = 0; i < dim; i++) {
+    auto dim_z = ref_z.shape(0);
+    Eigen::VectorXd z_vec = Eigen::VectorXd(dim_z);
+    for(int i = 0; i < dim_z; i++) {
         z_vec(i) = ref_z(i);
     }
-    return filter->KFUpdate(z_vec, dh_threshold);
+    filter->KFUpdate(z_vec);
+
+    Eigen::VectorXd &vec_x = filter->GetX();
+    auto dim = vec_x.size();
+    std::vector<float> x(dim);
+    for(int i = 0; i < dim; i++) {
+        x[i] = vec_x(i);
+    }
+    return py::array_t<float>(py::array::ShapeContainer({dim}), x.data());
 }
 
 void motion_prediction(int handle, py::array_t<float> &trajectory) {
@@ -391,25 +333,6 @@ void motion_prediction(int handle, py::array_t<float> &trajectory) {
         traj_rw(0, i, 5) = x(8);
         traj_rw(0, i, 6) = (i + 1) * 100000;
     }
-}
-
-static std::unique_ptr<SerialDriver> sSerial = nullptr;
-void init_serial(std::string device, int baud) {
-    sSerial.reset(new SerialDriver(device, baud));
-}
-
-std::string serial_read() {
-    if (sSerial == nullptr) {
-        usleep(1000000);
-        return std::string("");
-    }
-
-    char buf[64] = "";
-    int receveSize = sSerial->readBuf(buf, 64, 1000000);
-    if (0 == receveSize) {
-        return std::string("");
-    }
-    return std::string(buf, receveSize);
 }
 
 PYBIND11_MODULE(cpp_utils_ext, m) {
@@ -468,10 +391,6 @@ PYBIND11_MODULE(cpp_utils_ext, m) {
           py::arg("points"), py::arg("voxel_size")
     );
 
-    m.def("get_distance_matrix", &get_distance_matrix, "get_distance_matrix",
-          py::arg("det"), py::arg("trk"), py::arg("out")
-    );
-
     m.def("get_association", &get_association, "get_association",
           py::arg("det_len"), py::arg("trk_len"), py::arg("matched_indices"),
           py::arg("threshold"), py::arg("iou_matrix")
@@ -483,29 +402,16 @@ PYBIND11_MODULE(cpp_utils_ext, m) {
           py::arg("handle"), py::arg("is_static"), py::arg("x")
     );
 
-    m.def("filter_set_x", &filter_set_x, "filter_set_x",
-          py::arg("handle"), py::arg("x")
-    );
-
-    m.def("filter_get_x", &filter_get_x, "filter_get_x",
-          py::arg("handle")
-    );
-
     m.def("filter_predict", &filter_predict, "filter_predict",
           py::arg("handle"), py::arg("dt"), py::arg("motion"), py::arg("dh")
     );
 
     m.def("filter_update", &filter_update, "filter_update",
-          py::arg("handle"), py::arg("z"), py::arg("dh_threshold")
+          py::arg("handle"), py::arg("z")
     );
 
     m.def("motion_prediction", &motion_prediction, "motion_prediction",
           py::arg("handle"), py::arg("trajectory")
     );
 
-    m.def("init_serial", &init_serial, "init_serial",
-          py::arg("device"), py::arg("baud")
-    );
-
-    m.def("serial_read", &serial_read, "serial_read");
 }

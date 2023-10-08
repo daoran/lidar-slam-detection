@@ -12,36 +12,34 @@ class DetectManager(ManagerTemplate):
         super().__init__('Detect', cfg, logger, system)
 
         # only initialize once
-        self.engine = DetInfer(**cfg["board"]["inference_engine"], logger=logger)
-        self.engine.initialize()
+        self.detection = DetInfer(**cfg["board"]["inference_engine"], logger=logger)
+        self.detection.initialize()
+
+        self.fusion = Fusion(self.logger)
+        self.fusion.setup_tunnel(self.detection)
+        self.fusion.initialize()
+
+        self.tracking = Tracker(self.logger)
+        self.tracking.setup_tunnel(self.fusion)
+        self.tracking.initialize()
+
+        self.modules = [self.detection, self.fusion, self.tracking]
 
     def setup(self, cfg):
         self.cfg = cfg
 
-        self.engine.setup(cfg.detection)
-        self.engine.start()
-
-        self.fusing = Fusion(self.logger)
-        self.fusing.setup_tunnel(self.engine)
-        self.fusing.init()
-
-        self.tracking = Tracker(self.logger)
-        self.tracking.setup_tunnel(self.fusing)
-        self.tracking.init()
-
         self.object_filter = ObjectFilter(self.logger)
-        self.object_filter.set_output(cfg.output)
-        if len(cfg.roi[0]['contour']) == 0:
-            self.object_filter.disable_roi()
-        else:
-            self.object_filter.enable_roi(cfg.roi[0]['contour'], is_include=cfg.roi[0]['include'])
+        self.object_filter.set_config(cfg)
+
+        for module in self.modules:
+            module.set_config(cfg)
+            module.start()
 
         self.frame_queue = queue.Queue(maxsize=10)
 
     def release(self):
-        self.tracking.deinit()
-        self.fusing.deinit()
-        self.engine.stop()
+        for module in self.modules:
+            module.stop()
 
     def start(self):
         pass
@@ -50,19 +48,17 @@ class DetectManager(ManagerTemplate):
         pass
 
     def is_init_done(self):
-        return self.engine.is_prepared_done()
+        return self.detection.is_prepared_done()
 
     def set_config(self, cfg):
-        self.object_filter.set_output(cfg.output)
-        if len(cfg.roi[0]['contour']) == 0:
-            self.object_filter.disable_roi()
-        else:
-            self.object_filter.enable_roi(cfg.roi[0]['contour'], is_include=cfg.roi[0]['include'])
+        self.object_filter.set_config(cfg)
+        for module in self.modules:
+            module.set_config(cfg)
 
     def try_enqueue(self):
         retry = 0
         while True:
-            if self.frame_queue.full() or self.engine.is_overload() or self.fusing.is_overload() or \
+            if self.frame_queue.full() or self.detection.is_overload() or self.fusing.is_overload() or \
                self.tracking.is_overload():
                 retry = retry + 1
                 if self.cfg.input.mode == 'offline' and retry < 100:
@@ -71,7 +67,7 @@ class DetectManager(ManagerTemplate):
                 else:
                     self.logger.warn('overload: frame queue {}, engine {}, fusing {}, tracking {}'.format(
                                       self.frame_queue.full(),
-                                      self.engine.is_overload(),
+                                      self.detection.is_overload(),
                                       self.fusing.is_overload(),
                                       self.tracking.is_overload()))
                     return False
@@ -88,7 +84,7 @@ class DetectManager(ManagerTemplate):
         return data_dict
 
     def enqueue(self, input_dict, module_name):
-        input_dict['do_detection'] = self.engine.enqueue(input_dict)
+        input_dict['do_detection'] = self.detection.enqueue(input_dict)
         self.frame_queue.put_nowait(input_dict)
 
     def get_data(self, **kwargs):

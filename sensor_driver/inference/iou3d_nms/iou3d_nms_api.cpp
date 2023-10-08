@@ -24,6 +24,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 const int THREADS_PER_BLOCK_NMS = sizeof(unsigned long long) * 8;
 
 void nmsLauncher(const float *boxes, unsigned long long * mask, int boxes_num, float nms_overlap_thresh);
+void boxesoverlapLauncher(const int num_a, const float *boxes_a, const int num_b, const float *boxes_b, float *ans_overlap);
+void boxesunionLauncher(const int num_a, const float *boxes_a, const int num_b, const float *boxes_b, float *ans_union);
 #endif
 
 int boxes_iou_bev_cpu(py::array_t<float> &boxes_a_tensor, py::array_t<float> &boxes_b_tensor, py::array_t<float> &ans_iou_tensor){
@@ -98,15 +100,91 @@ int nms_gpu(py::array_t<float> &boxes, py::array_t<long> &keep, float nms_overla
     return num_to_keep;
 }
 
+int boxes_overlap_bev_gpu(py::array_t<float> boxes_a, py::array_t<float> boxes_b, py::array_t<float> ans_overlap){
+    // params boxes_a: (N, 7) [x, y, z, dx, dy, dz, heading]
+    // params boxes_b: (M, 7) [x, y, z, dx, dy, dz, heading]
+    // params ans_overlap: (N, M)
+
+    float *boxes_a_data_cuda = NULL;
+    float *boxes_b_data_cuda = NULL;
+	cudaMalloc((void**)&boxes_a_data_cuda, boxes_a.nbytes());
+	cudaMemcpy(boxes_a_data_cuda, boxes_a.data(), boxes_a.nbytes(), cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&boxes_b_data_cuda, boxes_b.nbytes());
+	cudaMemcpy(boxes_b_data_cuda, boxes_b.data(), boxes_b.nbytes(), cudaMemcpyHostToDevice);
+
+    float *ans_overlap_data_cuda = NULL;
+    cudaMalloc((void**)&ans_overlap_data_cuda, ans_overlap.nbytes());
+
+    int num_a = boxes_a.unchecked<2>().shape(0);
+    int num_b = boxes_b.unchecked<2>().shape(0);
+
+    const float * boxes_a_data = boxes_a_data_cuda;
+    const float * boxes_b_data = boxes_b_data_cuda;
+    float * ans_overlap_data = ans_overlap_data_cuda;
+
+    boxesoverlapLauncher(num_a, boxes_a_data, num_b, boxes_b_data, ans_overlap_data);
+    cudaMemcpy(ans_overlap.mutable_data(), ans_overlap_data_cuda, ans_overlap.nbytes(), cudaMemcpyDeviceToHost);
+
+    cudaFree(boxes_a_data_cuda);
+    cudaFree(boxes_b_data_cuda);
+    cudaFree(ans_overlap_data_cuda);
+    return 1;
+}
+
+int boxes_union_bev_gpu(py::array_t<float> boxes_a, py::array_t<float> boxes_b, py::array_t<float> ans_union){
+    // params boxes_a: (N, 7) [x, y, z, dx, dy, dz, heading]
+    // params boxes_b: (M, 7) [x, y, z, dx, dy, dz, heading]
+    // params ans_overlap: (N, M)
+
+    float *boxes_a_data_cuda = NULL;
+    float *boxes_b_data_cuda = NULL;
+	cudaMalloc((void**)&boxes_a_data_cuda, boxes_a.nbytes());
+	cudaMemcpy(boxes_a_data_cuda, boxes_a.data(), boxes_a.nbytes(), cudaMemcpyHostToDevice);
+	cudaMalloc((void**)&boxes_b_data_cuda, boxes_b.nbytes());
+	cudaMemcpy(boxes_b_data_cuda, boxes_b.data(), boxes_b.nbytes(), cudaMemcpyHostToDevice);
+
+    float *ans_union_data_cuda = NULL;
+    cudaMalloc((void**)&ans_union_data_cuda, ans_union.nbytes());
+
+    int num_a = boxes_a.unchecked<2>().shape(0);
+    int num_b = boxes_b.unchecked<2>().shape(0);
+
+    const float * boxes_a_data = boxes_a_data_cuda;
+    const float * boxes_b_data = boxes_b_data_cuda;
+    float * ans_union_data = ans_union_data_cuda;
+
+    boxesunionLauncher(num_a, boxes_a_data, num_b, boxes_b_data, ans_union_data);
+    cudaMemcpy(ans_union.mutable_data(), ans_union_data_cuda, ans_union.nbytes(), cudaMemcpyDeviceToHost);
+
+    cudaFree(boxes_a_data_cuda);
+    cudaFree(boxes_b_data_cuda);
+    cudaFree(ans_union_data_cuda);
+    return 1;
+}
+
 #else
 
 int nms_gpu(py::array_t<float> &boxes, py::array_t<long> &keep, float nms_overlap_thresh){
     return 0;
 }
 
+int boxes_overlap_bev_gpu(py::array_t<float> boxes_a, py::array_t<float> boxes_b, py::array_t<float> ans_overlap){
+    return 0;
+}
+
+int boxes_union_bev_gpu(py::array_t<float> boxes_a, py::array_t<float> boxes_b, py::array_t<float> ans_union){
+    return 0;
+}
+
 #endif
 
 PYBIND11_MODULE(iou3d_nms_ext, m) {
+    m.def("boxes_overlap_bev_gpu", &boxes_overlap_bev_gpu, "oriented boxes overlap",
+        py::arg("boxes_a"), py::arg("boxes_b"), py::arg("ans_overlap")
+    );
+    m.def("boxes_union_bev_gpu", &boxes_union_bev_gpu, "oriented boxes union",
+        py::arg("boxes_a"), py::arg("boxes_b"), py::arg("ans_union")
+    );
 	m.def("nms_gpu", &nms_gpu, "oriented nms gpu",
 		py::arg("boxes"), py::arg("keep"), py::arg("nms_overlap_thresh")
 	);

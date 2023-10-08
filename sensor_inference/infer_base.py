@@ -23,7 +23,7 @@ class InferBase():
     def initialize(self):
         raise NotImplementedError
 
-    def setup(self, base_cfg):
+    def set_config(self, base_cfg):
         self.base_cfg = base_cfg
 
     def set_output(self, output_queue):
@@ -82,6 +82,7 @@ class InferBase():
             while not self.engine_start.value and self.process_run.value:
                 self.is_stopped.value = True
                 time.sleep(1e-2)
+
             while self.engine_start.value:
                 data_dict = self.input_queue.get()
                 if self.engine_start.value is False:

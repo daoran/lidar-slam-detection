@@ -15,6 +15,13 @@ class ObjectFilter():
         self.include_poly = []
         self.exclude_poly = []
 
+    def set_config(self, cfg):
+        self.set_output(cfg.output)
+        if len(cfg.roi[0]['contour']) == 0:
+            self.disable_roi()
+        else:
+            self.enable_roi(cfg.roi[0]['contour'], is_include=cfg.roi[0]['include'])
+
     def set_output(self, cfg):
         self.cfg = cfg
         self.output_cls = dict()

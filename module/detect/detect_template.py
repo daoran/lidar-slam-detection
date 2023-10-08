@@ -1,8 +1,14 @@
-
-from multiprocessing import Process, Event, Queue, Value
 import queue
 import time
+from multiprocessing import Process, Queue, Value
 import sensor_driver.common_lib.cpp_utils as util
+
+def clear_queue(q):
+    while not q.empty():
+        try:
+            q.get(False)
+        except Exception as e:
+            continue
 
 class DetectTemplate():
     def __init__(self, name, logger, queue_max_size = 3):
@@ -10,29 +16,48 @@ class DetectTemplate():
         self.logger = logger
         self.queue_max_size = queue_max_size
         self.tunnel_set = False
+        self.engine_start = Value('b', False)
         self.thread_start = Value('b', False)
+        self.is_stopped   = Value('b', True)
+        self.output_queue = Queue(maxsize=self.queue_max_size)
+
+    def initialize(self):
+        if not self.tunnel_set:
+            self.input_queue = Queue(maxsize=self.queue_max_size)
+
+    def set_config(self, cfg):
+        pass
 
     def setup_tunnel(self, peer):
         self.tunnel_set = True
         self.input_queue = peer.get_output_queue()
 
-    def init(self):
-        if not self.tunnel_set:
-            self.input_queue = Queue(maxsize=self.queue_max_size)
-        self.output_queue = Queue(maxsize=self.queue_max_size)
-        self.thread_event = Event()
-        self.thread_start.value = True
-        self.thread = Process(target=self._run_thread, name=self.name, args=())
-        self.thread.daemon = True
-        self.thread.start()
+    def start(self):
+        if self.engine_start.value:
+            return
 
-    def deinit(self):
-        self.thread_start.value = False
-        self.thread_event.wait(1.0)
-        if not self.thread_event.is_set():
-            self.logger.warn('%s process is still running' % self.name)
-        self.thread.terminate()
-        self.thread.join()
+        self.engine_start.value = True
+        self.is_stopped.value = False
+        if not self.thread_start.value:
+            self.thread_start.value = True
+            self.thread = Process(target=self._run_thread, name=self.name, args=())
+            self.thread.daemon = True
+            self.thread.start()
+
+    def stop(self):
+        if not self.engine_start.value:
+            return
+
+        self.engine_start.value = False
+        while not self.is_stopped.value:
+            time.sleep(1e-2)
+
+        clear_queue(self.input_queue)
+        clear_queue(self.output_queue)
+        self.logger.info('%s stopped' % self.name)
+
+    def prepare(self):
+        pass
 
     def enqueue(self, input_dict):
         if not input_dict:
@@ -46,27 +71,32 @@ class DetectTemplate():
         raise NotImplementedError
 
     def _run_thread(self):
+        util.init_backtrace_handle()
         util.set_thread_priority(self.name, 30)
         while self.thread_start.value:
-            try:
-                input_dict = self.input_queue.get(block=True, timeout=0.1)
-            except queue.Empty:
-                continue
-            if not input_dict:
-                continue
-            start_time = time.monotonic()
-            output_dict = self.process(input_dict)
-            process_time = (time.monotonic() - start_time) * 1000
-            if process_time < 100:
-                self.logger.debug('%s process time is: %.1f ms' % (self.name, process_time))
-            else:
-                self.logger.warn('%s process time is: %.1f ms' % (self.name, process_time))
-            if not output_dict:
-                continue
-            self.output_queue.put(output_dict)
+            while not self.engine_start.value and self.thread_start.value:
+                self.is_stopped.value = True
+                time.sleep(1e-2)
 
-        self.logger.info('%s stopped' % self.name)
-        self.thread_event.set()
+            self.prepare()
+            while self.engine_start.value:
+                try:
+                    input_dict = self.input_queue.get(block=True, timeout=0.1)
+                except queue.Empty:
+                    continue
+
+                if self.engine_start.value is False:
+                    break
+                start_time = time.monotonic()
+                output_dict = self.process(input_dict)
+                process_time = (time.monotonic() - start_time) * 1000
+                if process_time < 100:
+                    self.logger.debug('%s process time is: %.1f ms' % (self.name, process_time))
+                else:
+                    self.logger.warn('%s process time is: %.1f ms' % (self.name, process_time))
+                if not output_dict:
+                    continue
+                self.output_queue.put(output_dict)
 
     def get_output(self, block=True, timeout=None):
         try:

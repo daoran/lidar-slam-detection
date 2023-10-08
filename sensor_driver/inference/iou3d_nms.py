@@ -17,6 +17,50 @@ def boxes_bev_iou_cpu(boxes_a, boxes_b):
 
     return ans_iou
 
+def boxes_giou3d_gpu(boxes_a, boxes_b):
+    """
+    Args:
+        boxes_a: (N, 7) [x, y, z, dx, dy, dz, heading]
+        boxes_b: (N, 7) [x, y, z, dx, dy, dz, heading]
+
+    Returns:
+        ans_iou: (N, M)
+    """
+
+    boxes_a = np.ascontiguousarray(boxes_a, dtype=np.float32)
+    boxes_b = np.ascontiguousarray(boxes_b, dtype=np.float32)
+    # height overlap
+    boxes_a_height_max = (boxes_a[:, 2] + boxes_a[:, 5] / 2).reshape(-1, 1)
+    boxes_a_height_min = (boxes_a[:, 2] - boxes_a[:, 5] / 2).reshape(-1, 1)
+    boxes_b_height_max = (boxes_b[:, 2] + boxes_b[:, 5] / 2).reshape(1, -1)
+    boxes_b_height_min = (boxes_b[:, 2] - boxes_b[:, 5] / 2).reshape(1, -1)
+
+    # bev overlap
+    overlaps_bev = np.zeros((boxes_a.shape[0], boxes_b.shape[0]), dtype=np.float32)  # (N, M)
+    iou3d_nms_ext.boxes_overlap_bev_gpu(boxes_a, boxes_b, overlaps_bev)
+
+    convexhull_bev = np.zeros((boxes_a.shape[0], boxes_b.shape[0]), dtype=np.float32)  # (N, M)
+    iou3d_nms_ext.boxes_union_bev_gpu(boxes_a, boxes_b, convexhull_bev)
+
+    max_of_min = np.maximum(boxes_a_height_min, boxes_b_height_min)
+    min_of_max = np.minimum(boxes_a_height_max, boxes_b_height_max)
+    overlaps_h = np.clip(min_of_max - max_of_min, 0, None)
+
+    min_of_min = np.minimum(boxes_a_height_min, boxes_b_height_min)
+    max_of_max = np.maximum(boxes_a_height_max, boxes_b_height_max)
+    unions_h = np.clip(max_of_max - min_of_min, 0, None)
+
+    # 3d iou
+    overlaps_3d = overlaps_bev * overlaps_h
+    convexhull_3d = np.clip(convexhull_bev * unions_h, 1e-6, None)
+
+    vol_a = (boxes_a[:, 3] * boxes_a[:, 4] * boxes_a[:, 5]).reshape(-1, 1)
+    vol_b = (boxes_b[:, 3] * boxes_b[:, 4] * boxes_b[:, 5]).reshape(1, -1)
+    unions_3d = np.clip(vol_a + vol_b - overlaps_3d, 1e-6, None)
+
+    giou3d = overlaps_3d / unions_3d - (convexhull_3d - unions_3d) / convexhull_3d
+    return giou3d
+
 def nms_gpu(boxes, scores, thresh, pre_maxsize=None, **kwargs):
     """
     :param boxes: (N, 7) [x, y, z, dx, dy, dz, heading]
