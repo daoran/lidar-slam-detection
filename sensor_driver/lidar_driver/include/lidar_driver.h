@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_map>
 
 #include "readerwriterqueue.h"
 #include "Types.h"
@@ -15,6 +16,17 @@
 #include "rs_decode_difop.h"
 
 namespace LIDAR {
+
+struct OusterCfg {
+  int rings;
+  std::vector<double> beamAzimuthAngles;
+  std::vector<double> beamAltitudeAngles;
+  double n;
+  double z_offset;
+};
+
+typedef std::unordered_map<int, OusterCfg> OusterCfgMap;
+typedef std::unordered_map<int, std::function<void(char*, const OusterCfg&)>> OusterParsefunMap;
 
 class LidarDriver {
  public:
@@ -27,10 +39,8 @@ class LidarDriver {
     None,
     LS_C_16,
     VLP_16,
-    Ouster_OS1_128,
-    Ouster_OS2_128,
-    Ouster_OS1_32,
-    Ouster_OS1_64,
+    Ouster_OS1,
+    Ouster_OS2,
     RS_LiDAR_16,
     RS_LiDAR_32,
     RS_Ruby_Lite,
@@ -61,15 +71,16 @@ class LidarDriver {
 
  private:
   void veloRun();
+  void setParseFun();
   void resetPoints();
   void resetRuntimeVariables();
+  void setOusterCfgMap();
 
   void packagePrase_VLP_16(char buf[]);
   void packagePrase_LS_C_16(char buf[]);
-  void packagePrase_Ouster_OS1_32(char buf[]);
-  void packagePrase_Ouster_OS1_64(char buf[]);
-  void packagePrase_Ouster_OS1_128(char buf[]);
-  void packagePrase_Ouster_OS2_128(char buf[]);
+  void packagePrase_Ouster_OS(char buf[]);
+  void packagePrase_Ouster(char buf[], const OusterCfg& cfg);
+  void packagePrase_Ouster_V3(char buf[], const OusterCfg& cfg);
   void packagePrase_RS_LiDAR_16(char buf[]);
   void packagePrase_RS_LiDAR_32(char buf[]);
   void packagePrase_RS_Ruby_Lite(char buf[]);
@@ -84,6 +95,7 @@ class LidarDriver {
 
  private:
   int packageLenth;
+  int receveSize;
 
   enum modeType veloMode;
   enum lidarType LidarType;
@@ -110,21 +122,41 @@ class LidarDriver {
 
   float xmlData[16];
 
+  // Ouster
+  OusterParsefunMap os_parsefun_maps_;
+  OusterCfgMap os_cfg_maps_;
+
   // Ouster-OS1-128
   double beamAltitudeAngles[128];
   double beamAzimuthAngles[128];
+
+  // Ouster-OS1-128(v2.5.2-v3)
+  double beamAltitudeAngles_v3[128];
+  double beamAzimuthAngles_v3[128];
 
   // Ouster-OS2-128
   double beamAltitudeAnglesForOS2[128];
   double beamAzimuthAnglesForOS2[128];
 
+  // Ouster-OS2-128(v2.5.2-v3)
+  double beamAltitudeAnglesForOS2_v3[128];
+  double beamAzimuthAnglesForOS2_v3[128];  
+
   // Ouster-OS1-64
   double beamAltitudeAngles64[64];
   double beamAzimuthAngles64[64];
 
+  // Ouster-OS1-64(v2.5.2-v3)
+  double beamAltitudeAngles64_v3[64];
+  double beamAzimuthAngles64_v3[64];
+
   // Ouster-OS1-32
   double beamAltitudeAngles32[32];
   double beamAzimuthAngles32[32];
+
+  // Ouster-OS1-32(v2.5.2-v3)
+  double beamAltitudeAngles32_v3[32];
+  double beamAzimuthAngles32_v3[32];
 
   // Custom
   uint32_t prevFrameId;

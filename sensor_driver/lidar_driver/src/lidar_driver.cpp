@@ -24,23 +24,20 @@ void LidarDriver::veloRun() {
   std::unique_ptr<UDPServer> veloUDPServer(new UDPServer(port));
   static std::unique_ptr<UDPServer> veloUDPSender(new UDPServer(0));
 
-  std::unique_ptr<char> buf(new char[packageLenth]);
+  std::unique_ptr<char> buf(new char[65536]);
+  
   while (!threadStopFlag) {
     auto clock = std::chrono::steady_clock::now();
-    int receveSize = veloUDPServer->UDPServerReceive(buf.get(), packageLenth);
-    if (receveSize != packageLenth) {
-      LOG_ERROR("receive wrong size package len {} != {}", receveSize, packageLenth);
-      continue;
-    }
+    receveSize = veloUDPServer->UDPServerReceive(buf.get(), 65536);
     auto elapseMs = since(clock).count();
     if (elapseMs >= 20) {
       LOG_WARN("lidar {}, receive buffer wait for {} ms", name, elapseMs);
     }
 
     if (startTransfer) {
-      int sendSize = veloUDPSender->UDPSendtoBuf(destinationIp, port, buf.get(), packageLenth);
-      if (sendSize != packageLenth) {
-        LOG_ERROR("package transfer send error, {} != {}", sendSize, packageLenth);
+      int sendSize = veloUDPSender->UDPSendtoBuf(destinationIp, port, buf.get(), receveSize);
+      if (sendSize != receveSize) {
+        LOG_ERROR("package transfer send error, {} != {}", sendSize, receveSize);
       }
     }
 
@@ -53,86 +50,8 @@ void LidarDriver::veloRun() {
   }
 }
 
-LidarDriver::lidarType LidarDriver::getLidarTypeByName(std::string name) {
-  if (name.compare("VLP-16") == 0) {
-    return lidarType::VLP_16;
-  } else if (name.compare("LS-C-16") == 0) {
-    return lidarType::LS_C_16;
-  } else if (name.compare("Ouster-OS1-128") == 0) {
-    return lidarType::Ouster_OS1_128;
-  } else if (name.compare("Ouster-OS2-128") == 0) {
-    return lidarType::Ouster_OS2_128;
-  } else if (name.compare("Ouster-OS1-32") == 0) {
-    return lidarType::Ouster_OS1_32;
-  } else if (name.compare("Ouster-OS1-64") == 0) {
-    return lidarType::Ouster_OS1_64;
-  } else if (name.compare("RS-LiDAR-16") == 0) {
-    return lidarType::RS_LiDAR_16;
-  } else if (name.compare("RS-LiDAR-32") == 0) {
-    return lidarType::RS_LiDAR_32;
-  } else if (name.compare("RS-Ruby-Lite") == 0) {
-    return lidarType::RS_Ruby_Lite;
-  } else if (name.compare("RS-Helios-16P") == 0) {
-    return lidarType::RS_Helios_16P;
-  } else if (name.compare("RS-Helios") == 0) {
-    return lidarType::RS_Helios;
-  } else if (name.compare("Custom") == 0) {
-    return lidarType::Custom;
-  } else {
-    return lidarType::None;
-  }
-}
-
-std::string LidarDriver::getLidarNameByType(lidarType type) {
-  switch (type) {
-    case lidarType::VLP_16: {
-      return "VLP-16";
-    }
-    case lidarType::LS_C_16: {
-      return "LS-C-16";
-    }
-    case lidarType::Ouster_OS1_128: {
-      return "Ouster-OS1-128";
-    }
-    case lidarType::Ouster_OS2_128: {
-      return "Ouster-OS2-128";
-    }
-    case lidarType::Ouster_OS1_32: {
-      return "Ouster-OS1-32";
-    }
-    case lidarType::Ouster_OS1_64: {
-      return "Ouster-OS1-64";
-    }
-    case lidarType::RS_LiDAR_16: {
-      return "RS-LiDAR-16";
-    }
-    case lidarType::RS_LiDAR_32: {
-      return "RS-LiDAR-32";
-    }
-    case lidarType::RS_Ruby_Lite: {
-      return "RS-Ruby-Lite";
-    }
-    case lidarType::RS_Helios_16P: {
-      return "RS-Helios-16P";
-    }
-    case lidarType::RS_Helios: {
-      return "RS-Helios";
-    }
-    case lidarType::Custom: {
-      return "Custom";
-    }
-    default: {
-      return "";
-    }
-  }
-}
-
-LidarDriver::LidarDriver(modeType modeIn, lidarType lidarIn, int affinityCpu) {
-  veloMode = modeIn;
-  LidarType = lidarIn;
-  AffinityCpu = affinityCpu;
-
-  switch (lidarIn) {
+void LidarDriver::setParseFun() {
+  switch (LidarType) {
     case lidarType::VLP_16: {
       parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_VLP_16, this,
                            std::placeholders::_1);
@@ -187,30 +106,18 @@ LidarDriver::LidarDriver(modeType modeIn, lidarType lidarIn, int affinityCpu) {
                          getLidarNameByType(LidarType), packageLenth);
       break;
     }
-    case lidarType::Ouster_OS1_128: {
-      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS1_128, this,
+    case lidarType::Ouster_OS1: {
+      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS, this,
                            std::placeholders::_1);
-      packageLenth = 24896;
+      setOusterCfgMap();                           
       break;
-    }
-    case lidarType::Ouster_OS2_128: {
-      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS2_128, this,
+    }  
+    case lidarType::Ouster_OS2: {
+      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS, this,
                            std::placeholders::_1);
-      packageLenth = 24896;
+      setOusterCfgMap(); 
       break;
-    }
-    case lidarType::Ouster_OS1_32: {
-      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS1_32, this,
-                           std::placeholders::_1);
-      packageLenth = 6464;
-      break;
-    }
-    case lidarType::Ouster_OS1_64: {
-      parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_OS1_64, this,
-                           std::placeholders::_1);
-      packageLenth = 12608;
-      break;
-    }
+    }        
     case lidarType::Custom: {
       parseFun = std::bind(&LIDAR::LidarDriver::packagePrase_Custom, this,
                            std::placeholders::_1);
@@ -218,15 +125,170 @@ LidarDriver::LidarDriver(modeType modeIn, lidarType lidarIn, int affinityCpu) {
       break;
     }
     default: {
-      LOG_ERROR("No support lidar type {}", lidarIn);
+      LOG_ERROR("No support lidar type {}", LidarType);
       abort();
       break;
     }
   }
+}
+
+void LidarDriver::setOusterCfgMap() {
+  OusterCfg cfg;
+  // 6400 for ouster 32 v3
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 32;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = std::vector<double>(beamAzimuthAngles32_v3, 
+                          beamAzimuthAngles32_v3 + 32);
+  cfg.beamAltitudeAngles = std::vector<double>(beamAltitudeAngles32_v3, 
+                            beamAltitudeAngles32_v3 + 32);
+  os_cfg_maps_.insert({6400, cfg});
+  os_parsefun_maps_.insert(
+    {6400, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_V3, this,
+                      std::placeholders::_1, std::placeholders::_2)});
+
+  // 6464 for ouster 32
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 32;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = std::vector<double>(beamAzimuthAngles32, 
+                          beamAzimuthAngles32 + 32);
+  cfg.beamAltitudeAngles = std::vector<double>(beamAltitudeAngles32, 
+                            beamAltitudeAngles32 + 32);
+  os_cfg_maps_.insert({6464, cfg});
+  os_parsefun_maps_.insert(
+    {6464, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster, this,
+                      std::placeholders::_1, std::placeholders::_2)});  
+
+  // 12544 for ouster 64 v3
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 64;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = std::vector<double>(beamAzimuthAngles64_v3, 
+                          beamAzimuthAngles64_v3 + 64);
+  cfg.beamAltitudeAngles = std::vector<double>(beamAltitudeAngles64_v3, 
+                            beamAltitudeAngles64_v3 + 64);
+  os_cfg_maps_.insert({12544, cfg});
+  os_parsefun_maps_.insert(
+    {12544, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_V3, this,
+                      std::placeholders::_1, std::placeholders::_2)});  
+  
+  // 12608 for ouster 64
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 64;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = std::vector<double>(beamAzimuthAngles64, 
+                          beamAzimuthAngles64 + 64);
+  cfg.beamAltitudeAngles = std::vector<double>(beamAltitudeAngles64, 
+                            beamAltitudeAngles64 + 64);
+  os_cfg_maps_.insert({12608, cfg});
+  os_parsefun_maps_.insert(
+    {12608, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster, this,
+                      std::placeholders::_1, std::placeholders::_2)});  
+  // 24832 for ouster 128 v3
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 128;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = LidarType == lidarType::Ouster_OS1?
+      std::vector<double>(beamAzimuthAngles_v3, beamAzimuthAngles_v3 + 128) : 
+      std::vector<double>(beamAzimuthAnglesForOS2_v3, beamAzimuthAnglesForOS2_v3 + 128);
+  cfg.beamAltitudeAngles = LidarType == lidarType::Ouster_OS1?
+      std::vector<double>(beamAltitudeAngles_v3, beamAltitudeAngles_v3 + 128) : 
+      std::vector<double>(beamAltitudeAnglesForOS2_v3, beamAltitudeAnglesForOS2_v3 + 128);
+  os_cfg_maps_.insert({24832, cfg});
+  os_parsefun_maps_.insert(
+    {24832, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster_V3, this,
+                      std::placeholders::_1, std::placeholders::_2)});    
+
+  // 24896 for ouster 128
+  cfg.n = LidarType == lidarType::Ouster_OS1? 15.806 : 13.762;
+  cfg.rings = 128;
+  cfg.z_offset = LidarType == lidarType::Ouster_OS1? 0.038195 : 0.074296;
+  cfg.beamAzimuthAngles = LidarType == lidarType::Ouster_OS1?
+      std::vector<double>(beamAzimuthAngles, beamAzimuthAngles + 128) : 
+      std::vector<double>(beamAzimuthAnglesForOS2, beamAzimuthAnglesForOS2 + 128);
+  cfg.beamAltitudeAngles = LidarType == lidarType::Ouster_OS1?
+      std::vector<double>(beamAltitudeAngles, beamAltitudeAngles + 128) : 
+      std::vector<double>(beamAltitudeAnglesForOS2, beamAltitudeAnglesForOS2 + 128);
+  os_cfg_maps_.insert({24896, cfg});
+  os_parsefun_maps_.insert(
+    {24896, std::bind(&LIDAR::LidarDriver::packagePrase_Ouster, this,
+                      std::placeholders::_1, std::placeholders::_2)});
+}
+
+LidarDriver::lidarType LidarDriver::getLidarTypeByName(std::string name) {
+  if (name.compare("VLP-16") == 0) {
+    return lidarType::VLP_16;
+  } else if (name.compare("LS-C-16") == 0) {
+    return lidarType::LS_C_16;
+  } else if (name.compare("Ouster-OS1") == 0) {
+    return lidarType::Ouster_OS1;
+  } else if (name.compare("Ouster-OS2") == 0) {
+    return lidarType::Ouster_OS2;    
+  } else if (name.compare("RS-LiDAR-16") == 0) {
+    return lidarType::RS_LiDAR_16;
+  } else if (name.compare("RS-LiDAR-32") == 0) {
+    return lidarType::RS_LiDAR_32;
+  } else if (name.compare("RS-Ruby-Lite") == 0) {
+    return lidarType::RS_Ruby_Lite;
+  } else if (name.compare("RS-Helios-16P") == 0) {
+    return lidarType::RS_Helios_16P;
+  } else if (name.compare("RS-Helios") == 0) {
+    return lidarType::RS_Helios;
+  } else if (name.compare("Custom") == 0) {
+    return lidarType::Custom;
+  } else {
+    return lidarType::None;
+  }
+}
+
+std::string LidarDriver::getLidarNameByType(lidarType type) {
+  switch (type) {
+    case lidarType::VLP_16: {
+      return "VLP-16";
+    }
+    case lidarType::LS_C_16: {
+      return "LS-C-16";
+    }
+    case lidarType::Ouster_OS1: {
+      return "Ouster-OS1";
+    }  
+    case lidarType::Ouster_OS2: {
+      return "Ouster-OS2";
+    }
+    case lidarType::RS_LiDAR_16: {
+      return "RS-LiDAR-16";
+    }
+    case lidarType::RS_LiDAR_32: {
+      return "RS-LiDAR-32";
+    }
+    case lidarType::RS_Ruby_Lite: {
+      return "RS-Ruby-Lite";
+    }
+    case lidarType::RS_Helios_16P: {
+      return "RS-Helios-16P";
+    }
+    case lidarType::RS_Helios: {
+      return "RS-Helios";
+    }
+    case lidarType::Custom: {
+      return "Custom";
+    }
+    default: {
+      return "";
+    }
+  }
+}
+
+LidarDriver::LidarDriver(modeType modeIn, lidarType lidarIn, int affinityCpu) {
+  veloMode = modeIn;
+  LidarType = lidarIn;
+  AffinityCpu = affinityCpu;
 
   staticTransform = Transform();
   startTransfer = false;
   xmlCorrection();
+  setParseFun();
   resetRuntimeVariables();
 }
 
@@ -322,6 +384,10 @@ void LidarDriver::setExcludeFilter(RangeFilter excludeFilter) {
 }
 
 void LidarDriver::packagePrase_VLP_16(char buf[1206]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:VLP-16 receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }  
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   int i = 0, j = 0;
   int index1 = 0, index2 = 0;
@@ -379,6 +445,10 @@ void LidarDriver::packagePrase_VLP_16(char buf[1206]) {
 }
 
 void LidarDriver::packagePrase_LS_C_16(char buf[1206]) {
+    if (receveSize != packageLenth) {
+        LOG_ERROR("{}:LS-C-16 receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+        return;
+    }    
     float pointTime = float(getMonotonicTime() - scanMonotonicTime);
     const raw_packet_t* packet = (const raw_packet_t*)&buf[0];
     for (size_t blk_idx = 0; blk_idx < BLOCKS_PER_PACKET; ++blk_idx) {
@@ -583,104 +653,28 @@ void LidarDriver::packagePrase_LS_C_16(char buf[1206]) {
     }
 }
 
-void LidarDriver::packagePrase_Ouster_OS1_32(char buf[6464]) {
-  float pointTime = float(getMonotonicTime() - scanMonotonicTime);
-  constexpr int column_bytes_32 = 16 + (32 * 12) + 4;
-  const double n = 15.806;  // lidar_origin_to_beam_origin_mm
-  int h = 32;
-  int w = 1024;
-  int next_m_id{w};
-  int cur_m_id = 0;
-  int32_t cur_f_id{-1};
-
-  for (int i = 0; i < 16; i++) {
-    uint8_t *col_buf = (uint8_t *)(buf + i * column_bytes_32);
-    uint64_t time_stamp;
-    std::memcpy(&time_stamp, col_buf, sizeof(uint64_t));
-
-    uint16_t m_id;
-    std::memcpy(&m_id, col_buf + 8, sizeof(uint16_t));
-    cur_m_id = m_id;
-
-    uint16_t f_id;
-    memcpy(&f_id, col_buf + 10, sizeof(uint16_t));
-
-    uint32_t is_valid;
-    memcpy(&is_valid, col_buf + column_bytes_32 - 4, sizeof(uint32_t));
-    const bool valid = is_valid == 0xffffffff;
-
-    uint32_t encoder_count;
-    std::memcpy(&encoder_count, col_buf + 12, sizeof(uint32_t));
-
-    if (!valid || m_id >= w || f_id + 1 == cur_f_id) continue;
-
-    if (f_id != cur_f_id) {
-      next_m_id = 0;
-      cur_f_id = f_id;
-    }
-
-    for (uint8_t ipx = 0; ipx < h; ipx++) {
-      const uint8_t *px_buf = col_buf + 16 + ipx * 12;
-      uint32_t range;
-      std::memcpy(&range, px_buf, sizeof(uint32_t));
-      range &= 0x000fffff;
-
-      uint16_t intensity;
-      std::memcpy(&intensity, px_buf + 6, sizeof(uint16_t));
-
-      uint16_t reflectivity;
-      std::memcpy(&reflectivity, px_buf + 4, sizeof(uint16_t));
-
-      uint16_t ambient;
-      std::memcpy(&ambient, px_buf + 8, sizeof(uint16_t));
-
-      uint8_t ring = ipx;
-      const double r = static_cast<double>(range);
-
-      float px, py, pz;
-      std::ptrdiff_t u = ipx;
-      std::ptrdiff_t v = m_id;
-      double encoder = -1.0 * 2 * M_PI * encoder_count / 90112;
-      double azimuth = -1.0 * beamAzimuthAngles32[u] * M_PI / 180.0;
-      double altitude = beamAltitudeAngles32[u] * M_PI / 180.0;
-      double x = (r - n) * cos(azimuth + encoder) * cos(altitude) + n * cos(encoder);
-      px = static_cast<float>(x / 1000.0);
-      double y = (r - n) * sin(azimuth + encoder) * cos(altitude) + n * sin(encoder);
-      py = static_cast<float>(y / 1000.0);
-      double z = (r - n) * sin(altitude);
-      pz = static_cast<float>(z / 1000.0);
-
-      if (pointsInROI(px, py, pz)) {
-        pointCloud->emplace_back(px);
-        pointCloud->emplace_back(py);
-        pointCloud->emplace_back(pz);
-        pointCloud->emplace_back(std::min(1.0f, intensity / 2048.0f));
-        pointCloudAttr->emplace_back(pointTime);
-        pointCloudAttr->emplace_back(float(ring));
-      }
-    }
-  }
-  if (cur_m_id == 1023) {  // 1023 or 2047
-    LidarScan *scan = new LidarScan("Ouster-OS1-32", scanStartTime, 2, pointCloud, pointCloudAttr);
-    scanQueue.enqueue(scan);
-    resetPoints();
-    scanStartTime = getCurrentTime();
-    scanMonotonicTime = getMonotonicTime();
+void LidarDriver::packagePrase_Ouster_OS(char buf[]) {
+  if (os_cfg_maps_.find(receveSize) != os_cfg_maps_.end()) {
+    os_parsefun_maps_[receveSize](buf, os_cfg_maps_[receveSize]);
+  } else {
+    LOG_ERROR("{}:{} receive wrong size package len {}", 
+              AffinityCpu, getLidarNameByType(LidarType), receveSize);
+    return;
   }
 }
 
-void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
+void LidarDriver::packagePrase_Ouster(char buf[], const OusterCfg& cfg) {
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
-  constexpr int column_bytes_64 = 16 + (64 * 12) + 4;
-  const double n = 15.806;  // lidar_origin_to_beam_origin_mm
-  int h = 64;
+  const int column_bytes = 16 + (cfg.rings * 12) + 4;
+  const double n = cfg.n;  // lidar_origin_to_beam_origin_mm
+  int h = cfg.rings;
   int w = 1024;
   int next_m_id{w};
   int cur_m_id = 0;
   int32_t cur_f_id{-1};
 
   for (int i = 0; i < 16; i++) {
-    uint8_t *col_buf = (uint8_t *)(buf + i * column_bytes_64);
+    uint8_t *col_buf = (uint8_t *)(buf + i * column_bytes);
     uint64_t time_stamp;
     std::memcpy(&time_stamp, col_buf, sizeof(uint64_t));
 
@@ -692,7 +686,7 @@ void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
     memcpy(&f_id, col_buf + 10, sizeof(uint16_t));
 
     uint32_t is_valid;
-    memcpy(&is_valid, col_buf + column_bytes_64 - 4, sizeof(uint32_t));
+    memcpy(&is_valid, col_buf + column_bytes - 4, sizeof(uint32_t));
     const bool valid = is_valid == 0xffffffff;
 
     uint32_t encoder_count;
@@ -727,8 +721,8 @@ void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
       std::ptrdiff_t u = ipx;
       std::ptrdiff_t v = m_id;
       double encoder = -1.0 * 2 * M_PI * encoder_count / 90112;
-      double azimuth = -1.0 * beamAzimuthAngles64[u] * M_PI / 180.0;
-      double altitude = beamAltitudeAngles64[u] * M_PI / 180.0;
+      double azimuth = -1.0 * cfg.beamAzimuthAngles[u] * M_PI / 180.0;
+      double altitude = cfg.beamAltitudeAngles[u] * M_PI / 180.0;
       double x = (r - n) * cos(azimuth + encoder) * cos(altitude) + n * cos(encoder);
       px = static_cast<float>(x / 1000.0);
       double y = (r - n) * sin(azimuth + encoder) * cos(altitude) + n * sin(encoder);
@@ -738,7 +732,7 @@ void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
 
       px = -px;
       py = -py;
-      pz = pz + 0.03618;
+      pz = pz + cfg.z_offset;
 
       if (pointsInROI(px, py, pz)) {
         pointCloud->emplace_back(px);
@@ -751,7 +745,8 @@ void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
     }
   }
   if (cur_m_id == 1023) {  // 1023 or 2047
-    LidarScan *scan = new LidarScan("Ouster-OS1-64", scanStartTime, 2, pointCloud, pointCloudAttr);
+    std::string lidar_name = getLidarNameByType(LidarType) + "-" + std::to_string(cfg.rings);
+    LidarScan *scan = new LidarScan(lidar_name, scanStartTime, 2, pointCloud, pointCloudAttr);
     scanQueue.enqueue(scan);
     resetPoints();
     scanStartTime = getCurrentTime();
@@ -759,36 +754,41 @@ void LidarDriver::packagePrase_Ouster_OS1_64(char buf[12608]) {
   }
 }
 
-void LidarDriver::packagePrase_Ouster_OS1_128(char buf[24896]) {
+void LidarDriver::packagePrase_Ouster_V3(char buf[], const OusterCfg& cfg) {
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
-  constexpr int column_bytes_128 = 16 + (128 * 12) + 4;
-  const double n = 15.806;  // lidar_origin_to_beam_origin_mm
-  int h = 128;
+  const int column_bytes = 12 + (cfg.rings * 12);
+  const double n = cfg.n;  // lidar_origin_to_beam_origin_mm
+  int h = cfg.rings;
   int w = 1024;
   int next_m_id{w};
   int cur_m_id = 0;
   int32_t cur_f_id{-1};
+  uint16_t packet_type, f_id;
+  uint32_t init_id;
+  std::memcpy(&packet_type, buf, sizeof(uint16_t));
+  std::memcpy(&cur_f_id, buf + 2, sizeof(uint16_t));
+  // std::memcpy(&init_id, buf + 4, sizeof(uint32_t));
+  // uint32_t init_id_mask = (1 << 24) - 1;
+  // init_id &= init_id_mask;
+
+  uint8_t *col_buf = nullptr;
+  uint64_t time_stamp;
+  uint16_t m_id, status, reflectivity, signal, NIR;
+  uint32_t range;
+  uint8_t ring;
+  float px, py, pz;
+  std::ptrdiff_t u, v;
+  double encoder, azimuth, altitude, x, y, z;  
 
   for (int i = 0; i < 16; i++) {
-    uint8_t *col_buf = (uint8_t *)(buf + i * column_bytes_128);
-    uint64_t time_stamp;
+    col_buf = (uint8_t *)(buf + 32 + i * column_bytes);
     std::memcpy(&time_stamp, col_buf, sizeof(uint64_t));
-
-    uint16_t m_id;
     std::memcpy(&m_id, col_buf + 8, sizeof(uint16_t));
     cur_m_id = m_id;
 
-    uint16_t f_id;
-    memcpy(&f_id, col_buf + 10, sizeof(uint16_t));
+    memcpy(&status, col_buf + 10, sizeof(uint16_t));
 
-    uint32_t is_valid;
-    memcpy(&is_valid, col_buf + column_bytes_128 - 4, sizeof(uint32_t));
-    const bool valid = is_valid == 0xffffffff;
-
-    uint32_t encoder_count;
-    std::memcpy(&encoder_count, col_buf + 12, sizeof(uint32_t));
-
-    if (!valid || m_id >= w || f_id + 1 == cur_f_id) continue;
+    if (m_id >= w || f_id + 1 == cur_f_id) continue;
 
     if (f_id != cur_f_id) {
       next_m_id = 0;
@@ -796,142 +796,45 @@ void LidarDriver::packagePrase_Ouster_OS1_128(char buf[24896]) {
     }
 
     for (uint8_t ipx = 0; ipx < h; ipx++) {
-      const uint8_t *px_buf = col_buf + 16 + ipx * 12;
-      uint32_t range;
+      const uint8_t *px_buf = col_buf + 12 + ipx * 12;
+      
       std::memcpy(&range, px_buf, sizeof(uint32_t));
-      range &= 0x000fffff;
-
-      uint16_t intensity;
-      std::memcpy(&intensity, px_buf + 6, sizeof(uint16_t));
-
-      uint16_t reflectivity;
       std::memcpy(&reflectivity, px_buf + 4, sizeof(uint16_t));
+      std::memcpy(&signal, px_buf + 6, sizeof(uint16_t));
+      std::memcpy(&NIR, px_buf + 8, sizeof(uint16_t));
 
-      uint16_t ambient;
-      std::memcpy(&ambient, px_buf + 8, sizeof(uint16_t));
-
-      uint8_t ring = ipx;
+      ring = ipx;
       const double r = static_cast<double>(range);
-
-      float px, py, pz;
-      std::ptrdiff_t u = ipx;
-      std::ptrdiff_t v = m_id;
-      double encoder = -1.0 * 2 * M_PI * encoder_count / 90112;
-      double azimuth = -1.0 * beamAzimuthAngles[u] * M_PI / 180.0;
-      double altitude = beamAltitudeAngles[u] * M_PI / 180.0;
-      double x = (r - n) * cos(azimuth + encoder) * cos(altitude) + n * cos(encoder);
+      
+      u = ipx;
+      v = m_id;
+      encoder = (1 - m_id / 1024.00) * 2 * M_PI;    
+      azimuth = -1.0 * cfg.beamAzimuthAngles[u] * M_PI / 180.0;
+      altitude = cfg.beamAltitudeAngles[u] * M_PI / 180.0;
+      x = (r - n) * cos(azimuth + encoder) * cos(altitude) + n * cos(encoder);
       px = static_cast<float>(x / 1000.0);
-      double y = (r - n) * sin(azimuth + encoder) * cos(altitude) + n * sin(encoder);
+      y = (r - n) * sin(azimuth + encoder) * cos(altitude) + n * sin(encoder);
       py = static_cast<float>(y / 1000.0);
-      double z = (r - n) * sin(altitude);
+      z = (r - n) * sin(altitude);
       pz = static_cast<float>(z / 1000.0);
 
       px = -px;
       py = -py;
-      pz = pz + 0.03618;
+      pz = pz + cfg.z_offset;
 
       if (pointsInROI(px, py, pz)) {
         pointCloud->emplace_back(px);
         pointCloud->emplace_back(py);
         pointCloud->emplace_back(pz);
-        pointCloud->emplace_back(std::min(1.0f, intensity / 2048.0f));
+        pointCloud->emplace_back(std::min(1.0f, signal / 2048.0f));
         pointCloudAttr->emplace_back(pointTime);
         pointCloudAttr->emplace_back(float(ring));
       }
     }
   }
   if (cur_m_id == 1023) {  // 1023 or 2047
-    LidarScan *scan = new LidarScan("Ouster-OS1-128", scanStartTime, 2, pointCloud, pointCloudAttr);
-    scanQueue.enqueue(scan);
-    resetPoints();
-    scanStartTime = getCurrentTime();
-    scanMonotonicTime = getMonotonicTime();
-  }
-}
-
-void LidarDriver::packagePrase_Ouster_OS2_128(char buf[24896]) {
-  float pointTime = float(getMonotonicTime() - scanMonotonicTime);
-  constexpr int column_bytes_128 = 16 + (128 * 12) + 4;
-  const double n = 13.762;  // lidar_origin_to_beam_origin_mm
-  int h = 128;
-  int w = 1024;
-  int next_m_id{w};
-  int cur_m_id = 0;
-  int32_t cur_f_id{-1};
-
-  for (int i = 0; i < 16; i++) {
-    uint8_t *col_buf = (uint8_t *)(buf + i * column_bytes_128);
-    uint64_t time_stamp;
-    std::memcpy(&time_stamp, col_buf, sizeof(uint64_t));
-
-    uint16_t m_id;
-    std::memcpy(&m_id, col_buf + 8, sizeof(uint16_t));
-    cur_m_id = m_id;
-
-    uint16_t f_id;
-    memcpy(&f_id, col_buf + 10, sizeof(uint16_t));
-
-    uint32_t is_valid;
-    memcpy(&is_valid, col_buf + column_bytes_128 - 4, sizeof(uint32_t));
-    const bool valid = is_valid == 0xffffffff;
-
-    uint32_t encoder_count;
-    std::memcpy(&encoder_count, col_buf + 12, sizeof(uint32_t));
-
-    if (!valid || m_id >= w || f_id + 1 == cur_f_id) continue;
-
-    if (f_id != cur_f_id) {
-      next_m_id = 0;
-      cur_f_id = f_id;
-    }
-
-    for (uint8_t ipx = 0; ipx < h; ipx++) {
-      const uint8_t *px_buf = col_buf + 16 + ipx * 12;
-      uint32_t range;
-      std::memcpy(&range, px_buf, sizeof(uint32_t));
-      range &= 0x000fffff;
-
-      uint16_t intensity;
-      std::memcpy(&intensity, px_buf + 6, sizeof(uint16_t));
-
-      uint16_t reflectivity;
-      std::memcpy(&reflectivity, px_buf + 4, sizeof(uint16_t));
-
-      uint16_t ambient;
-      std::memcpy(&ambient, px_buf + 8, sizeof(uint16_t));
-
-      uint8_t ring = ipx;
-      const double r = static_cast<double>(range);
-
-      float px, py, pz;
-      std::ptrdiff_t u = ipx;
-      std::ptrdiff_t v = m_id;
-      double encoder = -1.0 * 2 * M_PI * encoder_count / 90112;
-      double azimuth = -1.0 * beamAzimuthAnglesForOS2[u] * M_PI / 180.0;
-      double altitude = beamAltitudeAnglesForOS2[u] * M_PI / 180.0;
-      double x = (r - n) * cos(azimuth + encoder) * cos(altitude) + n * cos(encoder);
-      px = static_cast<float>(x / 1000.0);
-      double y = (r - n) * sin(azimuth + encoder) * cos(altitude) + n * sin(encoder);
-      py = static_cast<float>(y / 1000.0);
-      double z = (r - n) * sin(altitude);
-      pz = static_cast<float>(z / 1000.0);
-
-      px = -px;
-      py = -py;
-      pz = pz + 0.074296;
-
-      if (pointsInROI(px, py, pz)) {
-        pointCloud->emplace_back(px);
-        pointCloud->emplace_back(py);
-        pointCloud->emplace_back(pz);
-        pointCloud->emplace_back(std::min(1.0f, intensity / 2048.0f));
-        pointCloudAttr->emplace_back(pointTime);
-        pointCloudAttr->emplace_back(float(ring));
-      }
-    }
-  }
-  if (cur_m_id == 1023) {  // 1023 or 2047
-    LidarScan *scan = new LidarScan("Ouster-OS2-128", scanStartTime, 2, pointCloud, pointCloudAttr);
+    std::string lidar_name = getLidarNameByType(LidarType) + "-" + std::to_string(cfg.rings);
+    LidarScan *scan = new LidarScan(lidar_name, scanStartTime, 2, pointCloud, pointCloudAttr);
     scanQueue.enqueue(scan);
     resetPoints();
     scanStartTime = getCurrentTime();
@@ -940,6 +843,10 @@ void LidarDriver::packagePrase_Ouster_OS2_128(char buf[24896]) {
 }
 
 void LidarDriver::packagePrase_RS_LiDAR_16(char buf[1248]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:RS-LiDAR-16 receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }   
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   const RS16MsopPkt* mpkt_ptr = reinterpret_cast<const RS16MsopPkt*>(buf);
   int start_angle = 0;
@@ -1014,6 +921,10 @@ void LidarDriver::packagePrase_RS_LiDAR_16(char buf[1248]) {
 }
 
 void LidarDriver::packagePrase_RS_LiDAR_32(char buf[1248]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:RS-LiDAR-32 receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }  
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   const RS32MsopPkt* mpkt_ptr = reinterpret_cast<const RS32MsopPkt*>(buf);
   int start_angle = 0;
@@ -1082,6 +993,10 @@ void LidarDriver::packagePrase_RS_LiDAR_32(char buf[1248]) {
 }
 
 void LidarDriver::packagePrase_RS_Ruby_Lite(char buf[1248]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:RS-Ruby-Lite receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }     
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   const RS80MsopPkt* mpkt_ptr = reinterpret_cast<const RS80MsopPkt*>(buf);
   int start_angle = 0;
@@ -1153,6 +1068,10 @@ void LidarDriver::packagePrase_RS_Ruby_Lite(char buf[1248]) {
 }
 
 void LidarDriver::packagePrase_RS_Helios_16P(char buf[1248]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:RS-Helios-16P receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }    
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   // Get rs_helios device info
   if (!is_received_difop_) {
@@ -1223,6 +1142,10 @@ void LidarDriver::packagePrase_RS_Helios_16P(char buf[1248]) {
 }
 
 void LidarDriver::packagePrase_RS_Helios(char buf[1248]) {
+  if (receveSize != packageLenth) {
+    LOG_ERROR("{}:RS-Helios receive wrong size package len {} != {}", AffinityCpu, receveSize, packageLenth);
+    return;
+  }    
   float pointTime = float(getMonotonicTime() - scanMonotonicTime);
   // Get rs_helios device info
   if (!is_received_difop_) {
@@ -1372,6 +1295,46 @@ void LidarDriver::xmlCorrection(void) {
   memcpy(beamAltitudeAngles, tmp1_128, sizeof(beamAltitudeAngles));
   memcpy(beamAzimuthAngles, tmp2_128, sizeof(beamAzimuthAngles));
 
+  // os1 ouster 128 v2.5.2-v3
+  double tmp1_128_v3[128] = {
+      20.95, 20.68, 20.37, 20, 19.7, 19.43, 19.12, 18.77, 
+      18.46, 18.17, 17.86, 17.49, 17.18, 16.9, 16.56, 16.19, 
+      15.88, 15.58, 15.24, 14.88, 14.57, 14.26, 13.93, 13.56, 
+      13.25, 12.93, 12.59, 12.23, 11.9, 11.58, 11.24, 10.87, 
+      10.54, 10.21, 9.869999999999999, 9.51, 9.16, 8.84, 8.5, 8.140000000000001, 
+      7.78, 7.46, 7.11, 6.74, 6.41, 6.06, 5.71, 5.35, 
+      5.01, 4.66, 4.32, 3.95, 3.6, 3.27, 2.91, 2.55, 
+      2.2, 1.85, 1.5, 1.15, 0.8, 0.44, 0.1, -0.26, 
+      -0.61, -0.96, -1.32, -1.67, -2.02, -2.38, -2.72, -3.08, 
+      -3.41, -3.78, -4.14, -4.48, -4.82, -5.18, -5.53, -5.88, 
+      -6.21, -6.57, -6.92, -7.27, -7.61, -7.96, -8.32, -8.630000000000001, 
+      -8.970000000000001, -9.34, -9.68, -10.01, -10.35, -10.7, -11.04, -11.37, 
+      -11.69, -12.06, -12.4, -12.71, -13.05, -13.41, -13.74, -14.04, 
+      -14.37, -14.73, -15.06, -15.36, -15.67, -16.03, -16.36, -16.66, 
+      -16.96, -17.32, -17.64, -17.92, -18.24, -18.58, -18.91, -19.19, 
+      -19.49, -19.83, -20.14, -20.41, -20.7, -21.06, -21.38, -21.63};
+
+  double tmp2_128_v3[128] = {
+      4.21, 1.38, -1.44, -4.27, 4.2, 1.38, -1.45, -4.27, 
+      4.22, 1.38, -1.43, -4.26, 4.21, 1.4, -1.43, -4.25, 
+      4.21, 1.38, -1.44, -4.26, 4.21, 1.38, -1.44, -4.25, 
+      4.21, 1.38, -1.42, -4.26, 4.21, 1.39, -1.42, -4.25, 
+      4.22, 1.41, -1.43, -4.25, 4.22, 1.41, -1.42, -4.24, 
+      4.22, 1.4, -1.4, -4.24, 4.23, 1.4, -1.43, -4.24, 
+      4.23, 1.4, -1.4, -4.23, 4.22, 1.42, -1.41, -4.22, 
+      4.23, 1.42, -1.4, -4.22, 4.23, 1.42, -1.4, -4.22, 
+      4.23, 1.42, -1.41, -4.22, 4.24, 1.42, -1.39, -4.23, 
+      4.24, 1.43, -1.4, -4.23, 4.23, 1.43, -1.4, -4.22, 
+      4.24, 1.42, -1.4, -4.22, 4.24, 1.42, -1.4, -4.21, 
+      4.24, 1.43, -1.39, -4.21, 4.24, 1.43, -1.4, -4.21, 
+      4.24, 1.42, -1.4, -4.21, 4.23, 1.43, -1.4, -4.21, 
+      4.23, 1.42, -1.39, -4.21, 4.24, 1.42, -1.4, -4.21, 
+      4.24, 1.44, -1.4, -4.2, 4.25, 1.43, -1.39, -4.22, 
+      4.25, 1.43, -1.39, -4.21, 4.26, 1.44, -1.39, -4.22};
+
+  memcpy(beamAltitudeAngles_v3, tmp1_128_v3, sizeof(beamAltitudeAngles_v3));
+  memcpy(beamAzimuthAngles_v3, tmp2_128_v3, sizeof(beamAzimuthAngles_v3));
+
   // os2 ouster 128
   double tmp3_128[128] = {
       10.82, 10.64, 10.47, 10.29, 10.13, 9.960000000000001, 9.779999999999999,
@@ -1406,6 +1369,40 @@ void LidarDriver::xmlCorrection(void) {
   memcpy(beamAltitudeAnglesForOS2, tmp3_128, sizeof(beamAltitudeAnglesForOS2));
   memcpy(beamAzimuthAnglesForOS2, tmp4_128, sizeof(beamAzimuthAnglesForOS2));
 
+  // os2 ouster 128((v2.5.2-v3)):Execute <get_beam_intrinsics> command obtains the lidar information
+  double tmp3_128_v3[128] = {
+      10.82, 10.64, 10.47, 10.29, 10.13, 9.960000000000001, 9.779999999999999,
+      9.619999999999999, 9.460000000000001, 9.27, 9.130000000000001, 8.960000000000001,
+      8.77, 8.609999999999999, 8.449999999999999, 8.279999999999999, 8.07, 7.93, 7.76,
+      7.59, 7.41, 7.23, 7.06, 6.89, 6.72, 6.55, 6.38, 6.21, 6.03, 5.87, 5.68, 5.51,
+      5.32, 5.16, 4.99, 4.81, 4.64, 4.46, 4.28, 4.12, 3.92, 3.78, 3.6, 3.43, 3.27,
+      3.07, 2.91, 2.72, 2.56, 2.39, 2.2, 2.04, 1.86, 1.67, 1.51, 1.33, 1.15, 0.97,
+      0.8100000000000001, 0.64, 0.43, 0.28, 0.12, -0.06, -0.23, -0.41, -0.58, -0.76,
+      -0.95, -1.11, -1.29, -1.46, -1.62, -1.81, -1.98, -2.15, -2.34, -2.51, -2.69,
+      -2.86, -3.05, -3.19, -3.38, -3.55, -3.74, -3.9, -4.07, -4.25, -4.42, -4.6,
+      -4.78, -4.95, -5.11, -5.3, -5.46, -5.65, -5.84, -5.98, -6.16, -6.32, -6.49,
+      -6.68, -6.86, -7.02, -7.2, -7.36, -7.55, -7.73, -7.87, -8.06, -8.23, -8.4,
+      -8.58, -8.73, -8.9, -9.09, -9.23, -9.43, -9.58, -9.76, -9.960000000000001,
+      -10.1, -10.28, -10.45, -10.59, -10.77, -10.93, -11.09};
+
+  double tmp4_128_v3[128] = {
+      2.07, 0.6899999999999999, -0.68, -2.08, 2.07, 0.6899999999999999, -0.6899999999999999,
+      -2.08, 2.09, 0.6899999999999999, -0.7, -2.08, 2.07, 0.71, -0.6899999999999999, -2.08,
+      2.07, 0.71, -0.6899999999999999, -2.07, 2.07, 0.71, -0.6899999999999999, -2.08, 2.09,
+      0.7, -0.7, -2.07, 2.09, 0.71, -0.6899999999999999, -2.08, 2.07, 0.7, -0.7, -2.08, 2.08,
+      0.7, -0.6899999999999999, -2.07, 2.07, 0.7, -0.7, -2.08, 2.08, 0.68, -0.6899999999999999,
+      -2.08, 2.09, 0.7, -0.7, -2.07, 2.09, 0.68, -0.68, -2.08, 2.08, 0.6899999999999999, -0.7,
+      -2.07, 2.07, 0.6899999999999999, -0.7, -2.08, 2.09, 0.6899999999999999, -0.6899999999999999,
+      -2.08, 2.07, 0.6899999999999999, -0.7, -2.08, 2.08, 0.6899999999999999, -0.6899999999999999,
+      -2.07, 2.07, 0.6899999999999999, -0.7, -2.08, 2.07, 0.6899999999999999, -0.7, -2.07, 2.06,
+      0.6899999999999999, -0.7, -2.07, 2.07, 0.6899999999999999, -0.7, -2.07, 2.09, 0.68,
+      -0.6899999999999999, -2.08, 2.07, 0.7, -0.7, -2.07, 2.08, 0.6899999999999999, -0.7, -2.07,
+      2.08, 0.68, -0.71, -2.09, 2.08, 0.68, -0.7, -2.09, 2.07, 0.7, -0.7, -2.09, 2.08, 0.68, -0.7,
+      -2.08, 2.07, 0.68, -0.71, -2.08, 2.07, 0.68, -0.6899999999999999, -2.09};
+
+  memcpy(beamAltitudeAnglesForOS2_v3, tmp3_128_v3, sizeof(beamAltitudeAnglesForOS2_v3));
+  memcpy(beamAzimuthAnglesForOS2_v3, tmp4_128_v3, sizeof(beamAzimuthAnglesForOS2_v3));  
+
   double tmp1_64[64] = {
     20.68, 20, 19.42, 18.73, 18.14, 17.46, 16.86, 16.14,
     15.54, 14.83, 14.2, 13.48, 12.87, 12.14, 11.51, 10.77,
@@ -1431,6 +1428,33 @@ void LidarDriver::xmlCorrection(void) {
   memcpy(beamAltitudeAngles64, tmp1_64, sizeof(beamAltitudeAngles64));
   memcpy(beamAzimuthAngles64, tmp2_64, sizeof(beamAzimuthAngles64));
 
+  // os1 ouster 64((v2.5.2-v3)):Execute <get_beam_intrinsics> command obtains the lidar information
+  double tmp1_64_v3[64] = {
+    20.68, 20, 19.42, 18.73, 18.14, 17.46, 16.86, 16.14,
+    15.54, 14.83, 14.2, 13.48, 12.87, 12.14, 11.51, 10.77,
+    10.14, 9.41, 8.76, 8.02, 7.39, 6.64, 5.98, 5.23,
+    4.58, 3.83, 3.18, 2.43, 1.77, 1.02, 0.36, -0.4,
+    -1.07, -1.8, -2.45, -3.21, -3.88, -4.6, -5.28, -6.02,
+    -6.66, -7.41, -8.06, -8.779999999999999, -9.44, -10.16, -10.8, -11.53,
+    -12.16, -12.88, -13.52, -14.22, -14.87, -15.54, -16.19, -16.86,
+    -17.49, -18.15, -18.77, -19.43, -20.04, -20.67, -21.27, -21.9
+  };
+
+  double tmp2_64_v3[64] = {
+    1.24, -4.4, 1.25, -4.37, 1.27, -4.37, 1.29, -4.36,
+    1.3, -4.34, 1.29, -4.33, 1.32, -4.32, 1.33, -4.3,
+    1.33, -4.3, 1.34, -4.29, 1.36, -4.27, 1.37, -4.26,
+    1.37, -4.25, 1.38, -4.24, 1.39, -4.23, 1.4, -4.22,
+    1.39, -4.22, 1.42, -4.19, 1.41, -4.18, 1.43, -4.18,
+    1.45, -4.17, 1.46, -4.15, 1.47, -4.14, 1.5, -4.13,
+    1.5, -4.12, 1.51, -4.11, 1.53, -4.09, 1.53, -4.09,
+    1.53, -4.07, 1.54, -4.07, 1.56, -4.06, 1.58, -4.05
+  };
+
+  memcpy(beamAltitudeAngles64_v3, tmp1_64_v3, sizeof(beamAltitudeAngles64_v3));
+  memcpy(beamAzimuthAngles64_v3, tmp2_64_v3, sizeof(beamAzimuthAngles64_v3));
+
+
   double tmp1_32[32] = {
     21.62, 20.36, 19.11, 17.85, 16.56, 15.25, 13.92,
     12.57, 11.2, 9.84, 8.470000000000001, 7.07, 5.68,
@@ -1444,6 +1468,21 @@ void LidarDriver::xmlCorrection(void) {
     4.19, 4.19, 4.2, 4.17, 4.17, 4.17, 4.15, 4.17  };
   memcpy(beamAltitudeAngles32, tmp1_32, sizeof(beamAltitudeAngles32));
   memcpy(beamAzimuthAngles32, tmp2_32, sizeof(beamAzimuthAngles32));
+
+  // os1 ouster 32((v2.5.2-v3)):Execute <get_beam_intrinsics> command obtains the lidar information
+  double tmp1_32_v3[32] = {
+    21.62, 20.36, 19.11, 17.85, 16.56, 15.25, 13.92,
+    12.57, 11.2, 9.84, 8.470000000000001, 7.07, 5.68,
+    4.26, 2.87, 1.47, 0.06, -1.34, -2.77, -4.17, -5.57,
+    -6.96, -8.359999999999999, -9.73, -11.09, -12.45,
+    -13.78, -15.12, -16.41, -17.69, -18.97, -20.19  };
+  double tmp2_32_v3[32] = {
+    4.28, 4.27, 4.26, 4.28, 4.27, 4.27, 4.27, 4.26,
+    4.24, 4.25, 4.26, 4.23, 4.24, 4.22, 4.22, 4.24,
+    4.24, 4.23, 4.2, 4.22, 4.21, 4.22, 4.2, 4.19,
+    4.19, 4.19, 4.2, 4.17, 4.17, 4.17, 4.15, 4.17  };
+  memcpy(beamAltitudeAngles32_v3, tmp1_32_v3, sizeof(beamAltitudeAngles32_v3));
+  memcpy(beamAzimuthAngles32_v3, tmp2_32_v3, sizeof(beamAzimuthAngles32_v3));  
 
   // init LSC16 parameters
   for (size_t i = 0; i < 6300; ++i) {
