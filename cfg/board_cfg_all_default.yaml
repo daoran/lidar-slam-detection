@@ -10,7 +10,7 @@ board:
 pipeline: [['Source', 'SLAM', 'Sink']]
 
 detection:
-    sensor_input: ["0-Ouster-OS1-64", "1-Ouster-OS1-128", "2-Ouster-OS1-64", "0"]
+    sensor_input: ["0-Ouster-OS1", "1-Ouster-OS1", "2-Ouster-OS1", "0"]
 
 slam:
     mode: 'mapping'
@@ -23,7 +23,7 @@ slam:
     }
 
     mapping:
-        sensor_input: ["1-Ouster-OS1-128", "IMU"]
+        sensor_input: ["1-Ouster-OS1", "IMU"]
         ground_constraint: true
         loop_closure: true
         key_frames_interval: [4.0, 20.0]  # distance and degree threshold

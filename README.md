@@ -17,7 +17,7 @@ LSD currently supports many features:
 # TODO
 
 - [x] Support traffic light detection.
-- [ ] Support GIOU, two stage matching of object tracking.
+- [x] Support GIOU, Two-stage association of object tracking.
 - [ ] Support voxel 3D-CNN based freespace detection.
 - [ ] Support Transformer based motion prediction.
 
@@ -30,8 +30,14 @@ LSD currently supports many features:
 
 # Changelog
 
+**[2023-10-08]** Better 3DMOT (GIOU, Two-stage association).
+| Performance (WOD val) | AMOTA ↑ | AMOTP ↓ |  IDs(%) ↓ |
+|-----------------------|:-------:|:-------:|:---------:|
+| AB3DMOT               |  47.84  |  0.2584 |   0.67    |
+| GIOU + Two-stage      |  54.79  |  0.2492 |   0.19    |
+
 **[2023-07-06]** A new detection model (CenterPoint-VoxelNet) is support to run realtime (30FPS+).
-| Performance (Waymo Open Dataset) | Vec_L1 | Vec_L2 | Ped_L1 | Ped_L2 | Cyc_L1 | Cyc_L2 |
+| Performance (WOD val) | Vec_L1 | Vec_L2 | Ped_L1 | Ped_L2 | Cyc_L1 | Cyc_L2 |
 |--------------------------|:----------:|:-------:|:-------:|:-------:|:-------:|:-------:|
 | PointPillar              | 73.71/73.12|65.71/65.17|71.70/60.90|63.52/53.78|65.30/63.77 |63.12/61.64|
 | CenterPoint-VoxelNet (1 frame)     | 74.75/74.24|66.09/65.63|77.66/71.54|68.57/63.02|72.03/70.93 |69.63/68.57|
