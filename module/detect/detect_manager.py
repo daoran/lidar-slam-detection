@@ -58,17 +58,17 @@ class DetectManager(ManagerTemplate):
     def try_enqueue(self):
         retry = 0
         while True:
-            if self.frame_queue.full() or self.detection.is_overload() or self.fusing.is_overload() or \
+            if self.frame_queue.full() or self.detection.is_overload() or self.fusion.is_overload() or \
                self.tracking.is_overload():
                 retry = retry + 1
                 if self.cfg.input.mode == 'offline' and retry < 100:
                     time.sleep(1e-2)
                     continue
                 else:
-                    self.logger.warn('overload: frame queue {}, engine {}, fusing {}, tracking {}'.format(
+                    self.logger.warn('overload: frame queue {}, engine {}, fusion {}, tracking {}'.format(
                                       self.frame_queue.full(),
                                       self.detection.is_overload(),
-                                      self.fusing.is_overload(),
+                                      self.fusion.is_overload(),
                                       self.tracking.is_overload()))
                     return False
             else:
