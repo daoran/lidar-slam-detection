@@ -78,6 +78,14 @@ class ConfigManager():
             # check config completeness
             if 'imu_extrinsic_parameters' not in config.ins:
                 config.ins['imu_extrinsic_parameters'] = [0, 0, 0, 0, 0, 0]
+
+            # check the lidar name (replace Ouster-OSX-XXX with Ouster-OSX)
+            for lidar in config.lidar:
+                if 'Ouster-OS1' in lidar['name']:
+                    lidar['name'] = 'Ouster-OS1'
+                elif 'Ouster-OS2' in lidar['name']:
+                    lidar['name'] = 'Ouster-OS2'
+
         except Exception as e:
             self.logger.error(e)
 

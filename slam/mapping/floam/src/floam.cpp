@@ -16,10 +16,8 @@ void floamEnqueuePoints(PointCloudAttrPtr &points, Eigen::Matrix4d &init_guess);
 
 HDL_FLOAM::HDL_FLOAM() : SlamBase(), mOriginIsSet(false), mFrame(nullptr), mFrameAttr(nullptr) {
   mLidarName = "";
-  mSupportLidars["Ouster-OS1-128"] = 128;
-  mSupportLidars["Ouster-OS2-128"] = 128;
-  mSupportLidars["Ouster-OS1-64"]  = 64;
-  mSupportLidars["Ouster-OS1-32"]  = 32;
+  mSupportLidars["Ouster-OS1"]     = -1;
+  mSupportLidars["Ouster-OS2"]     = -1;
   mSupportLidars["VLP-16"]         = 16;
   mSupportLidars["LS-C-16"]        = 16;
   mSupportLidars["RS-LiDAR-16"]    = 16;

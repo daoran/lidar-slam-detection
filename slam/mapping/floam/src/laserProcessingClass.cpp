@@ -14,10 +14,18 @@ void LaserProcessingClass::featureExtraction(const PointCloudAttrPtr& pc, pcl::P
     // std::vector<int> indices;
     // pcl::removeNaNFromPointCloud(*pc_in, indices);
 
+    if (lidar_param.num_lines <= 0)
+    {
+        for (int i = 0; i < (int) pc->attr.size(); i++)
+        {
+            lidar_param.num_lines = std::max(lidar_param.num_lines, pc->attr[i].id);
+        }
+    }
 
     int N_SCANS = lidar_param.num_lines;
     std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> laserCloudScans;
-    for(int i=0;i<N_SCANS;i++){
+    for(int i=0;i<N_SCANS;i++)
+    {
         laserCloudScans.push_back(pcl::PointCloud<pcl::PointXYZI>::Ptr(new pcl::PointCloud<pcl::PointXYZI>()));
     }
 
