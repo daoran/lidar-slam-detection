@@ -212,8 +212,8 @@ def encode_image(worker_idx, img):
 def init_image_encoder():
     from third_party.turbojpeg import TurboJPEG
     global is_encoder_init, encoders, encode_worker
-    encoders = [TurboJPEG() for i in range(6)]
-    encode_worker = ThreadWorker('jpeg encoder', encode_image, 6)
+    encoders = [TurboJPEG() for i in range(8)]
+    encode_worker = ThreadWorker('jpeg encoder', encode_image, 8)
     encode_worker.start()
     is_encoder_init = True
 
