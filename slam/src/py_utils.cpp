@@ -247,26 +247,23 @@ void numpy_to_imu(py::array_t<double> &imu_list, std::vector<ImuType> &imu) {
 }
 
 py::dict keyframe_to_pydict(std::vector<std::shared_ptr<KeyFrame>> &frames) {
-  py::dict points, poses, stamps;
-  py::dict images, images_jpeg;
+  py::dict points, images, poses, stamps;
   for (size_t i = 0; i < frames.size(); i++) {
     std::string id = std::to_string(frames[i]->mId);
     points[id.c_str()] = eigen_to_numpy(frames[i]->mPoints);
     poses[id.c_str()]  = eigen_to_numpy(frames[i]->mOdom.matrix());
     stamps[id.c_str()] = frames[i]->mPoints->header.stamp;
 
-    py::dict image_jpeg;
-    for(auto &image : frames[i]->mImages) {
-      image_jpeg[image.first.c_str()] = vector_to_numpy(image.second);
+    py::dict image;
+    for(auto &im : frames[i]->mImages) {
+      image[im.first.c_str()] = vector_to_numpy(im.second);
     }
-    images[id.c_str()] = py::dict();
-    images_jpeg[id.c_str()] = image_jpeg;
+    images[id.c_str()] = image;
   }
 
   py::dict dict;
   dict["points"] = points;
   dict["images"] = images;
-  dict["images_jpeg"] = images_jpeg;
   dict["poses"]  = poses;
   dict["stamps"] = stamps;
   return dict;

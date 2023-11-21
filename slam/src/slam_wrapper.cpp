@@ -112,8 +112,7 @@ py::dict update_odom() {
   while (slam_ptr->getKeyframe(keyframe)) {
     py::dict d;
     d["points"]     = eigen_to_numpy(keyframe.points->cloud);
-    d["image"]      = map_to_pydict(keyframe.images);
-    d["image_jpeg"] = map_to_pydict(keyframe.images_stream);
+    d["image"]      = map_to_pydict(keyframe.images_stream);
     d["pose"]       = eigen_to_numpy(keyframe.T.matrix());
     d["stamp"]      = keyframe.points->cloud->header.stamp;
     l.attr("append")(d);
@@ -263,13 +262,13 @@ PYBIND11_MODULE(slam_wrapper, m) {
         py::arg("directory"), py::arg("stamp"), py::arg("id"),
         py::arg("points_input"), py::arg("odom_input")
   );
-  m.def("reset_map_points", &reset_map_points, "clear map points",
-        py::arg("z_min"), py::arg("z_max")
+  m.def("set_export_map_config", &set_export_map_config, "set export map config",
+        py::arg("z_min"), py::arg("z_max"), py::arg("color")
   );
-  m.def("merge_pcd", &merge_pcd, "merge pcd",
-        py::arg("points_input"), py::arg("odom_input"), py::arg("is_rgb")
+  m.def("export_points", &export_points, "export points",
+        py::arg("points_input"), py::arg("odom_input")
   );
-  m.def("dump_merged_pcd", &dump_merged_pcd, "dump merged pcd",
+  m.def("dump_map_points", &dump_map_points, "dump map points",
         py::arg("file")
   );
   m.def("dump_graph", &dump_graph, "dump graph",

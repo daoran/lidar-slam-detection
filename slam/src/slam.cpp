@@ -401,8 +401,9 @@ void SLAM::runMappingThread() {
       PointCloud::Ptr dist_filtered(new PointCloud());
       pointsDistanceFilter(filtered, dist_filtered, 0, mInitParameter.key_frame_range);
 
-      // enqueue keyframe queue
       keyframe.points->cloud = dist_filtered;
+      keyframe.images = std::map<std::string, ImageType>(); // release I420 image for saving memory
+      // enqueue keyframe queue
       mKeyframeQueue.enqueue(keyframe);
     }
   }

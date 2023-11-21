@@ -114,69 +114,66 @@ void dump_keyframe(const std::string& directory, uint64_t stamp, int id, py::arr
   py::gil_scoped_acquire acquire;
 }
 
-static PointCloud::Ptr gMapPoints(new PointCloud());
-static PointCloudRGB::Ptr gMapPointsRGB(new PointCloudRGB());
-static double gMapZMin = 0, gMapZMax = 0;
-void reset_map_points(double z_min, double z_max) {
-  gMapZMin = z_min;
-  gMapZMax = z_max;
-  gMapPoints = PointCloud::Ptr(new PointCloud());
-  gMapPointsRGB = PointCloudRGB::Ptr(new PointCloudRGB());
-  LOG_INFO("Set export map z min: {}, z max: {}", z_min, z_max);
+struct MapConfig{
+  MapConfig() {
+    points = PointCloud::Ptr(new PointCloud());
+    points_color = PointCloudRGB::Ptr(new PointCloudRGB());
+  }
+  double z_min;
+  double z_max;
+  std::string color;
+  PointCloud::Ptr points;
+  PointCloudRGB::Ptr points_color;
+};
+static MapConfig g_map_config;
+
+void set_export_map_config(double z_min, double z_max, std::string color) {
+  g_map_config = MapConfig();
+  g_map_config.z_min = z_min;
+  g_map_config.z_max = z_max;
+  g_map_config.color = color;
+  LOG_INFO("set export map z min: {}, z max: {}, color: {}", z_min, z_max, color);
 }
 
-void merge_pcd(py::array_t<float> &points_input, py::array_t<float> &odom_input, bool is_rgb) {
-  if (!is_rgb) {
+void export_points(py::array_t<float> &points_input, py::array_t<float> &odom_input) {
+  if (g_map_config.color.compare("rgb") != 0) {
     PointCloud::Ptr points = numpy_to_pointcloud(points_input, 255.0);
     pcl::transformPointCloud(*points, *points, numpy_to_eigen(odom_input));
     for (auto &p : points->points) {
-      if (p.z >= gMapZMin && p.z <= gMapZMax) {
-        gMapPoints->points.push_back(p);
-      }
-    }
-  } else {
-    PointCloudRGB::Ptr points = numpy_to_pointcloud_rgb(points_input);
-    pcl::transformPointCloud(*points, *points, numpy_to_eigen(odom_input));
-    for (auto &p : points->points) {
-      if (p.z >= gMapZMin && p.z <= gMapZMax) {
-        gMapPointsRGB->points.push_back(p);
+      if (p.z >= g_map_config.z_min && p.z <= g_map_config.z_max) {
+        g_map_config.points->points.push_back(p);
       }
     }
   }
 }
 
-void dump_merged_pcd(std::string file) {
-  if (gMapPoints->points.size() != 0) {
-    gMapPoints->width = static_cast<int>(gMapPoints->points.size());
-    gMapPoints->height = 1;
-    pcl::io::savePCDFileBinary(file, *gMapPoints);
-  } else {
-    gMapPointsRGB->width = static_cast<int>(gMapPointsRGB->points.size());
-    gMapPointsRGB->height = 1;
-    pcl::VoxelGrid<pcl::PointXYZRGB> voxelgrid;
-    voxelgrid.setLeafSize(0.1, 0.1, 0.1);
-    voxelgrid.setInputCloud(gMapPointsRGB);
-    voxelgrid.filter(*gMapPointsRGB);
+void dump_map_points(std::string file) {
+  if (g_map_config.color.compare("rgb") != 0) {
+    if (g_map_config.points->points.size() <= 0) {
+      return;
+    }
 
-    // check if use the SLAM color map
-    PointCloudRGB::Ptr color_map(new PointCloudRGB());
-    slam_ptr->getColorMap(color_map);
-    if (color_map->points.size()) {
-      gMapPointsRGB = PointCloudRGB::Ptr(new PointCloudRGB());
-      for (auto &p : color_map->points) {
-        if (p.z >= gMapZMin && p.z <= gMapZMax) {
-          gMapPointsRGB->push_back(p);
-        }
+    g_map_config.points->width = static_cast<int>(g_map_config.points->points.size());
+    g_map_config.points->height = 1;
+    pcl::io::savePCDFileBinary(file, *g_map_config.points);
+  } else {
+    PointCloudRGB::Ptr points(new PointCloudRGB());
+    slam_ptr->getColorMap(points);
+    for (auto &p : points->points) {
+      if (p.z >= g_map_config.z_min && p.z <= g_map_config.z_max) {
+        g_map_config.points_color->points.push_back(p);
       }
     }
-
-    if (gMapPointsRGB->points.size() != 0) {
-      pcl::io::savePCDFileBinary(file, *gMapPointsRGB);
+    if (g_map_config.points_color->points.size() <= 0) {
+      return;
     }
+
+    g_map_config.points_color->width = static_cast<int>(g_map_config.points_color->points.size());
+    g_map_config.points_color->height = 1;
+    pcl::io::savePCDFileBinary(file, *g_map_config.points_color);
   }
 
-  gMapPoints = PointCloud::Ptr(new PointCloud());
-  gMapPointsRGB = PointCloudRGB::Ptr(new PointCloudRGB());
+  g_map_config = MapConfig();
 }
 
 py::list dump_graph(const std::string& directory) {

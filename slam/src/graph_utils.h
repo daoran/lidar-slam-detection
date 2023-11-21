@@ -22,9 +22,9 @@ void set_graph_vertex_fix(int id, bool fix);
 py::dict run_graph_optimization();
 
 void dump_keyframe(const std::string& directory, uint64_t stamp, int id, py::array_t<float> &points_input, py::array_t<float> &odom_input);
-void reset_map_points(double z_min, double z_max);
-void merge_pcd(py::array_t<float> &points_input, py::array_t<float> &odom_input, bool is_rgb);
-void dump_merged_pcd(std::string file);
+void set_export_map_config(double z_min, double z_max, std::string color);
+void export_points(py::array_t<float> &points_input, py::array_t<float> &odom_input);
+void dump_map_points(std::string file);
 py::list dump_graph(const std::string& directory);
 
 #endif //__GRAPH_UTILS_H

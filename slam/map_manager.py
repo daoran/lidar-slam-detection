@@ -1,5 +1,4 @@
 import os
-import cv2
 import copy
 import datetime
 import numpy as np
@@ -7,17 +6,14 @@ from threading import Thread
 
 import slam_wrapper as slam
 from proto import internal_pb2
-from sensor_driver.common_lib.cpp_utils import get_transform_from_RPYT
 from util.common_util import do_mkdir, run_cmd
-from util.image_util import cvt_image
 
 def prepend(header, file):
-    with open(file, "rb") as fr:
-        data = fr.read()
-        with open(file, "wb") as fw:
-            fw.write(header)
-            fw.write(data)
-            fw.close()
+    data = open(file, "rb").read() if os.path.exists(file) else b''
+    with open(file, "wb") as fw:
+        fw.write(header)
+        fw.write(data)
+        fw.close()
 
 class MapManager():
     def __init__(self, config, logger):
@@ -25,8 +21,8 @@ class MapManager():
         self.logger = logger
 
         self.data = dict(
-            points = dict(), images = dict(), images_jpeg = dict(),
-            poses  = dict(),  edges = dict(),
+            points = dict(), images = dict(),
+            poses  = dict(), edges  = dict(),
             stamps = dict(),
         )
         self.meta = dict(
@@ -48,7 +44,6 @@ class MapManager():
         else:
             self.data['points'].update(data['points'])
             self.data['images'].update(data['images'])
-            self.data['images_jpeg'].update(data['images_jpeg'])
             self.data['poses'].update(data['poses'])
             self.data['stamps'].update(data['stamps'])
 
@@ -101,7 +96,6 @@ class MapManager():
         id_str = str(id)
         self.data['points'].pop(id_str)
         self.data['images'].pop(id_str)
-        self.data['images_jpeg'].pop(id_str)
         self.data['poses'].pop(id_str)
         self.data['stamps'].pop(id_str)
         slam.del_graph_vertex(id)
@@ -127,7 +121,7 @@ class MapManager():
 
     def get_key_frame(self, index, item):
         pointcloud = self.data['points'][index] if index in self.data['points'] else np.zeros((0, 4), dtype=np.float32)
-        images = self.data['images_jpeg'][index] if index in self.data['images_jpeg'] else {}
+        images = self.data['images'][index] if index in self.data['images'] else {}
         keyframe = internal_pb2.LidarPointcloudMap()
         # serialize to proto
         if "p" in item:
@@ -147,59 +141,22 @@ class MapManager():
         return slam.pointcloud_align(self.data['points'][source], self.data['points'][target], guess).flatten().tolist()
 
     def set_export_map_config(self, z_min, z_max, color):
-        slam.reset_map_points(z_min, z_max)
-        ins_ext_param = self.config.ins.extrinsic_parameters
-        ins_extrinic = get_transform_from_RPYT(ins_ext_param[0], ins_ext_param[1], ins_ext_param[2],
-                                               ins_ext_param[5], ins_ext_param[4], ins_ext_param[3])
+        slam.set_export_map_config(z_min, z_max, color)
         for idx, stamp in self.data['stamps'].items():
-            if color != "rgb":
-                slam.merge_pcd(self.data['points'][idx], self.data['poses'][idx], False)
-                continue
-
-            points_rgb = []
-            for camera_config in self.config.camera:
-                if camera_config.name not in self.data["images_jpeg"][idx]:
-                    continue
-                if camera_config.name not in self.data["images"][idx]:
-                    self.data["images"][idx][camera_config.name] = cv2.imdecode(self.data["images_jpeg"][idx][camera_config.name], cv2.IMREAD_COLOR)
-
-                image = cvt_image(self.data["images"][idx][camera_config.name], camera_config.output_width, camera_config.output_height)
-                fx, fy, cx, cy = camera_config.intrinsic_parameters[:4]
-                cam_ext_param = camera_config.extrinsic_parameters
-                cam_extrinic = get_transform_from_RPYT(cam_ext_param[0], cam_ext_param[1], cam_ext_param[2],
-                                                       cam_ext_param[5], cam_ext_param[4], cam_ext_param[3])
-                cam_extrinic = np.dot(cam_extrinic, np.linalg.inv(ins_extrinic))
-                points = self.data['points'][idx]
-                points_hom = np.hstack((points[:, :3], np.ones((points.shape[0], 1), dtype=np.float32)))
-                points_in_cam = np.dot(cam_extrinic, points_hom.T).T[:, 0:3]
-                depth_idx = points_in_cam[:, 2] > 0.1
-                u = (points_in_cam[:, 0] / points_in_cam[:, 2]) * fx + cx
-                v = (points_in_cam[:, 1] / points_in_cam[:, 2]) * fy + cy
-                u_idx = np.bitwise_and(u <= camera_config.output_width  - 1, u >= 0)
-                v_idx = np.bitwise_and(v <= camera_config.output_height - 1, v >= 0)
-                uv_idx = np.bitwise_and(u_idx, v_idx)
-                uv_idx = np.bitwise_and(uv_idx, depth_idx)
-                u = np.rint(u[uv_idx]).astype(np.int32)
-                v = np.rint(v[uv_idx]).astype(np.int32)
-                point_rgb = image[v, u]
-                points = np.concatenate([points[uv_idx, :3], point_rgb], axis = 1)
-                points_rgb.append(points)
-
-            if len(points_rgb) != 0:
-                points_rgb = np.concatenate(points_rgb, axis = 0)
-                slam.merge_pcd(points_rgb, self.data['poses'][idx], True)
+            slam.export_points(self.data['points'][idx], self.data['poses'][idx])
 
     def export_map(self):
-        slam.dump_merged_pcd('output/export_map.pcd')
+        map_name = 'output/export_map.pcd'
+        os.unlink(map_name)
+        slam.dump_map_points(map_name)
         origin = slam.get_map_origin()
         header = '''# This PCD file is generated by LSD\n# GNSS Anchor {:.10f} {:.10f} {:.10f}\n'''.format(origin[0, 0], origin[0, 1], origin[0, 2])
-        prepend(header.encode(), 'output/export_map.pcd')
+        prepend(header.encode(), map_name)
 
-    def add_key_frame(self, points, image, image_jpeg, pose, stamp):
+    def add_key_frame(self, points, image, pose, stamp):
         index = str(self.vertex_id)
         self.data['points'][index] = points
         self.data['images'][index] = image
-        self.data['images_jpeg'][index] = image_jpeg
         self.data['poses'][index] = pose
         self.data['stamps'][index] = stamp
         self.vertex_id += 1
@@ -234,7 +191,7 @@ class MapManager():
                              args=(graph_path,
                                    copy.deepcopy(self.data['poses']),
                                    self.data['points'].copy(),
-                                   self.data['images_jpeg'].copy(),
+                                   self.data['images'].copy(),
                                    copy.deepcopy(self.data['stamps']),),
                              daemon=True)
         self.thread.start()
