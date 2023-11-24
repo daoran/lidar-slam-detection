@@ -96,7 +96,10 @@ class DetectTemplate():
                     self.logger.warn('%s process time is: %.1f ms' % (self.name, process_time))
                 if not output_dict:
                     continue
-                self.output_queue.put(output_dict)
+                try:
+                    self.output_queue.put(output_dict, block=True, timeout=1.0)
+                except queue.Full:
+                    self.logger.error('%s output queue is full' % (self.name))
 
     def get_output(self, block=True, timeout=None):
         try:
