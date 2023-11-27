@@ -4,6 +4,7 @@
 #include <Eigen/Eigenvalues>
 
 #include <thrust/copy.h>
+#include <thrust/sequence.h>
 #include <thrust/iterator/transform_output_iterator.h>
 
 namespace fast_gicp {
@@ -90,7 +91,10 @@ struct covariance_regularization_mineig {
       values[i] = fmaxf(1e-3f, values[i]);
     }
 
-    Eigen::Matrix3f v_diag = values.asDiagonal();
+    Eigen::Matrix3f v_diag = Eigen::Matrix3f::Zero();
+    v_diag(0,0) = values.x();
+    v_diag(1,1) = values.y();
+    v_diag(2,2) = values.z();
     Eigen::Matrix3f v_inv = eig.eigenvectors().inverse();
     cov = eig.eigenvectors() * v_diag * v_inv;
   }

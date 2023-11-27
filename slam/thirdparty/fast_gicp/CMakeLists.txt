@@ -11,17 +11,11 @@ else()
     set(CUDA_LIBRARIES "")
 endif()
 
-EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
-if( ${ARCHITECTURE} STREQUAL "x86_64")
-    add_definitions(-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2)
-    set(CMAKE_C_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
-    set(CMAKE_CXX_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
-endif()
-
 set(CMAKE_BUILD_TYPE "Release")
 
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
+add_definitions(${PCL_DEFINITIONS})
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -47,6 +41,11 @@ add_library(fast_gicp SHARED
 target_link_libraries(fast_gicp
   ${PCL_LIBRARIES}
 )
+if (OPENMP_FOUND)
+    if (TARGET OpenMP::OpenMP_CXX)
+        target_link_libraries(fast_gicp OpenMP::OpenMP_CXX)
+    endif ()
+endif ()
 target_include_directories(fast_gicp PUBLIC
   include
   ${PCL_INCLUDE_DIRS}

@@ -215,13 +215,16 @@ void GaussianVoxelMap::create_voxelmap(const thrust::device_vector<Eigen::Vector
   num_points.resize(voxelmap_info.num_voxels);
   voxel_means.resize(voxelmap_info.num_voxels);
   voxel_covs.resize(voxelmap_info.num_voxels);
+  num_points.resize(voxelmap_info.num_voxels);
+  voxel_means.resize(voxelmap_info.num_voxels);
+  voxel_covs.resize(voxelmap_info.num_voxels);
   thrust::fill(thrust::cuda::par.on(stream), num_points.begin(), num_points.end(), 0);
   thrust::fill(thrust::cuda::par.on(stream), voxel_means.begin(), voxel_means.end(), Eigen::Vector3f::Zero().eval());
   thrust::fill(thrust::cuda::par.on(stream), voxel_covs.begin(), voxel_covs.end(), Eigen::Matrix3f::Zero().eval());
 
   thrust::for_each(thrust::cuda::par.on(stream), points.begin(), points.end(), accumulate_points_kernel(voxelmap_info_ptr.data(), buckets, num_points, voxel_means, voxel_covs));
 
-  thrust::for_each(thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(voxelmap_info.num_voxels), ndt_finalize_voxels_kernel(num_points, voxel_means, voxel_covs));
+  thrust::for_each(thrust::cuda::par.on(stream), thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(voxelmap_info.num_voxels), ndt_finalize_voxels_kernel(num_points, voxel_means, voxel_covs));
 
   cudaStreamSynchronize(stream);
   cudaStreamDestroy(stream);
@@ -246,7 +249,7 @@ void GaussianVoxelMap::create_voxelmap(const thrust::device_vector<Eigen::Vector
     thrust::make_zip_iterator(thrust::make_tuple(points.end(), covariances.end())),
     accumulate_points_kernel(voxelmap_info_ptr.data(), buckets, num_points, voxel_means, voxel_covs));
 
-  thrust::for_each(thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(voxelmap_info.num_voxels), finalize_voxels_kernel(num_points, voxel_means, voxel_covs));
+  thrust::for_each(thrust::cuda::par.on(stream), thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(voxelmap_info.num_voxels), finalize_voxels_kernel(num_points, voxel_means, voxel_covs));
 
   cudaStreamSynchronize(stream);
   cudaStreamDestroy(stream);
