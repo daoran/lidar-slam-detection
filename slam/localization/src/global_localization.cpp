@@ -312,6 +312,7 @@ void GlobalLocalization::runSearchPose() {
             init_match = localSearch(cloud, insPtr);
             if (insPtr->dimension == 6 && init_match.first != -1) {
                 init_guess = mKeyFrames[init_match.first]->mOdom.cast<float>().inverse() * insPtr->T.cast<float>();
+                init_guess(2, 3) = 0; // the altitude of INS is not reliable, set to z=0
             } else {
                 init_guess = yaw2matrix(-init_match.second);
             }

@@ -334,7 +334,7 @@ public:
     update_pose(stamp, pose.matrix());
 
     // check registration fitness score
-    if (fitness_score > 0.5) {
+    if (fitness_score > 1.0) {
       LOG_WARN("localization fitness score is too large, score {}", fitness_score);
       result = false;
     }
